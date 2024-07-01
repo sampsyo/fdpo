@@ -8,13 +8,16 @@ GRAMMAR = """
 prog: decl* asgt*
 
 asgt: ident "=" expr ";"
-?expr: ident
+?expr: ident | call
+call: ident "(" list{expr} ")"
 
 decl: dir WS ident ":" width ";"
 dir: "in" -> in | "out" -> out
 
 ?ident: CNAME
 ?width: INT
+
+?list{item}: [item ("," item)* ","?]
 
 %import common.WS
 %import common.CNAME
@@ -65,20 +68,55 @@ class Port:
 
 
 @dataclass(frozen=True)
+class Call:
+    func: str
+    args: list[str]  # TODO
+
+    @classmethod
+    def parse(cls, tree):
+        assert tree.data == "call"
+        func, args_tree = tree.children
+        assert args_tree.data == "list"
+        return cls(
+            str(func),
+            [parse_expr(t) for t in args_tree.children],
+        )
+
+    def pretty(self):
+        args = ", ".join(
+            pretty_expr(a) for a in self.args
+        )
+        return f"{self.func}({args})"
+
+
+def parse_expr(tree):
+    if isinstance(tree, lark.Token):
+        return str(tree)
+    elif tree.data == "call":
+        return Call.parse(tree)
+    else:
+        assert False, "unknown expr type"
+
+
+def pretty_expr(expr):
+    return expr if isinstance(expr, str) else expr.pretty()
+
+
+@dataclass(frozen=True)
 class Assignment:
     dest: str
-    src: str
+    src: str  # TODO
 
     @classmethod
     def parse(cls, tree):
         lhs, rhs = tree.children
         return cls(
             str(lhs),
-            str(rhs),
+            parse_expr(rhs),
         )
 
     def pretty(self):
-        return f"{self.dest} = {self.src};"
+        return f"{self.dest} = {pretty_expr(self.src)};"
 
 
 @dataclass(frozen=True)
