@@ -37,6 +37,13 @@ class Direction(enum.Enum):
             case _:
                 return False
 
+    def __str__(self):
+        match self:
+            case self.IN:
+                return "in"
+            case self.OUT:
+                return "out"
+
 
 @dataclass(frozen=True)
 class Port:
@@ -53,6 +60,9 @@ class Port:
             int(width),
         )
 
+    def pretty(self):
+        return f"{self.direction} {self.name} = {self.width};"
+
 
 @dataclass(frozen=True)
 class Assignment:
@@ -66,6 +76,9 @@ class Assignment:
             str(lhs),
             str(rhs),
         )
+
+    def pretty(self):
+        return f"{self.dest} = {self.src};"
 
 
 @dataclass(frozen=True)
@@ -95,6 +108,13 @@ class Program:
             asgts,
         )
 
+    def pretty(self):
+        return "\n".join(
+            [p.pretty() for p in self.inputs] +
+            [p.pretty() for p in self.outputs] +
+            [a.pretty() for a in self.assignments]
+        )
+
 
 
 def fdpo():
@@ -102,6 +122,7 @@ def fdpo():
     ast = parser.parse('in x: 32; in y: 32; out z: 10; x = y; z = j;')
     prog = Program.parse(ast)
     print(prog)
+    print(prog.pretty())
 
 
 if __name__ == "__main__":
