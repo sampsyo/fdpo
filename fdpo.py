@@ -118,10 +118,11 @@ class Program:
 
 
 def fdpo():
+    import sys
     parser = lark.Lark(GRAMMAR, parser='earley')
-    ast = parser.parse('in x: 32; in y: 32; out z: 10; x = y; z = j;')
+    src = sys.stdin.read()
+    ast = parser.parse(src)
     prog = Program.parse(ast)
-    print(prog)
     print(prog.pretty())
 
 
