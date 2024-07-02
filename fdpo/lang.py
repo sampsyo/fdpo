@@ -5,7 +5,9 @@ from dataclasses import dataclass
 GRAMMAR = r"""
 ?start: prog
 
-prog: decl* asgt*
+prog: decls asgts ["---" asgts]
+decls: decl*
+asgts: asgt*
 
 asgt: ident "=" expr ";"
 ?expr: ident | call
@@ -152,26 +154,26 @@ class Program:
     outputs: dict[str, Port]
     assignments: list[Assignment]
 
+    @staticmethod
+    def parse_decls(tree) -> tuple[dict[str, Port], dict[str, Port]]:
+        ports = [Port.parse_decl(l) for l in tree.children]
+        return (
+            {p.name: p for p in ports if p.direction == Direction.IN},
+            {p.name: p for p in ports if p.direction == Direction.OUT},
+        )
+
+    @staticmethod
+    def parse_asgts(tree) -> list[Assignment]:
+        return [Assignment.parse(l) for l in tree.children]
+
     @classmethod
     def parse(cls, tree) -> "Program":
         assert tree.data == "prog"
 
-        ports = []
-        asgts = []
-        for line in tree.children:
-            match line.data:
-                case "decl":
-                    ports.append(Port.parse_decl(line))
-                case "asgt":
-                    asgts.append(Assignment.parse(line))
-                case _:
-                    assert False, f"unknown line {line.data}"
-
-        return cls(
-            {p.name: p for p in ports if p.direction == Direction.IN},
-            {p.name: p for p in ports if p.direction == Direction.OUT},
-            asgts,
-        )
+        decls_tree, asgts_tree = tree.children
+        inputs, outputs = cls.parse_decls(decls_tree)
+        asgts = cls.parse_asgts(asgts_tree)
+        return cls(inputs, outputs, asgts)
 
     def pretty(self) -> str:
         return "\n".join(
