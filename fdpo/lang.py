@@ -79,10 +79,19 @@ class Call:
     def parse(cls, tree) -> "Call":
         assert tree.data == "call"
         func, args_tree = tree.children
-        assert args_tree.data == "list"
+
+        # We either have a list of arguments or a single argument. Maybe
+        # this is fixable with a better grammar?
+        if isinstance(args_tree, lark.Tree) and args_tree.data == "list":
+            arg_trees = args_tree.children
+        elif isinstance(args_tree, lark.Token):
+            arg_trees = [args_tree]
+        else:
+            assert False
+
         return cls(
             str(func),
-            [parse_expr(t) for t in args_tree.children],
+            [parse_expr(t) for t in arg_trees],
         )
 
     def pretty(self) -> str:

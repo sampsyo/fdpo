@@ -1,16 +1,23 @@
 from . import lang, lib
 
 
+class CheckError(Exception):
+    def __init__(self, message):
+        self.message = message
+
+
 def check_expr(prog: lang.Program, expr: lang.Expression) -> int:
     if isinstance(expr, lang.Call):
         if expr.func not in lib.FUNCTIONS:
-            assert False, "unknown function"
+            raise CheckError(f"unknown function {expr.func}")
         for arg in expr.args:
             return check_expr(prog, arg)
         return 32  # TODO
     elif isinstance(expr, lang.Lookup):
-        assert expr.var in prog.inputs, f"unknown input {expr.var}"
-        return 32  # TODO
+        port = prog.inputs.get(expr.var)
+        if not port:
+            raise CheckError(f"unknown variable {expr.var}")
+        return port.width
     else:
         assert False
 
@@ -18,6 +25,11 @@ def check_expr(prog: lang.Program, expr: lang.Expression) -> int:
 def check_asgt(prog: lang.Program, asgt: lang.Assignment):
     expr_width = check_expr(prog, asgt.expr)
     dest_width = prog.outputs[asgt.dest].width
+    if expr_width != dest_width:
+        raise CheckError(
+            f"width mismatch: {asgt.dest} has width {dest_width}, "
+            f"but expression has width {expr_width}"
+        )
     assert expr_width == dest_width, "width mismatch"
 
 

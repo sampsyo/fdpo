@@ -1,12 +1,18 @@
 from .lang import parse
-from .check import check
+from .check import check, CheckError
 import sys
 
 
 def main():
     src = sys.stdin.read()
     prog = parse(src)
-    check(prog)
+
+    try:
+        check(prog)
+    except CheckError as e:
+        print(f"error: {e.message}", file=sys.stderr)
+        sys.exit(1)
+
     print(prog.pretty())
 
 
