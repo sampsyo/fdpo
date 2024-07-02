@@ -8,8 +8,14 @@ class CheckError(Exception):
 
 def check_expr(prog: lang.Program, expr: lang.Expression) -> int:
     if isinstance(expr, lang.Call):
-        if expr.func not in lib.FUNCTIONS:
+        func = lib.FUNCTIONS.get(expr.func)
+        if not func:
             raise CheckError(f"unknown function {expr.func}")
+        if len(expr.args) != func.inputs:
+            raise CheckError(
+                f"{expr.func} expects {func.inputs} arguments "
+                f"but call has {len(expr.args)} arguments"
+            )
         for arg in expr.args:
             return check_expr(prog, arg)
         return 32  # TODO
