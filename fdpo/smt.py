@@ -1,4 +1,4 @@
-from . import lang
+from . import lang, lib
 from pysmt.shortcuts import Symbol, Equals, And, to_smtlib
 from pysmt.typing import BVType
 from pysmt.fnode import FNode
@@ -8,8 +8,11 @@ from itertools import chain
 def expr_to_smt(ports: dict[str, FNode], expr: lang.Expression):
     if isinstance(expr, lang.Lookup):
         return ports[expr.var]
+    elif isinstance(expr, lang.Call):
+        args = [expr_to_smt(ports, arg) for arg in expr.inputs]
+        return lib.FUNCTIONS[expr.func].smt(args)
     else:
-        assert False, "working on it"
+        assert False
 
 
 def to_formula(prog: lang.Program) -> FNode:
