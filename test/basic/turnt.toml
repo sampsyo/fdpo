@@ -1,3 +1,7 @@
 [envs.print]
 command = "fdpo < {filename}"
-output.nl = "-"
+output."rt" = "-"
+
+[envs.run]
+command = "fdpo run {args} < {filename}"
+output.out = "-"

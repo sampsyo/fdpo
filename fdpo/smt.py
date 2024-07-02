@@ -71,7 +71,7 @@ def solver(name: str, debug: bool = False):
 
 
 def run(prog: lang.Program, env: Env) -> Env:
-    with solver("z3", True):
+    with solver("z3"):
         ports, prog_f = to_formula(prog)
         env_constraints = [
             Equals(ports[var], BV(value, prog.inputs[var].width))
