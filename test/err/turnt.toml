@@ -1,0 +1,4 @@
+[envs.print]
+command = "fdpo < {filename}"
+return_code = 1
+output.err = "2"

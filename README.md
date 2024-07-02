@@ -6,4 +6,4 @@ Set up:
 
 Test:
 
-    turnt -j test/*.nl
+    turnt -j test/*/*.nl

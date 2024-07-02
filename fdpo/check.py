@@ -34,5 +34,13 @@ def check_asgt(prog: lang.Program, asgt: lang.Assignment):
 
 
 def check(prog: lang.Program):
+    assigned = set()
     for asgt in prog.assignments:
+        if asgt.dest in assigned:
+            raise CheckError(f"{asgt.dest} assigned multiple times")
+        assigned.add(asgt.dest)
         check_asgt(prog, asgt)
+
+    for out in prog.outputs:
+        if out not in assigned:
+            raise CheckError(f"{out} not assigned")
