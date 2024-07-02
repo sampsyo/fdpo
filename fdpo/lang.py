@@ -157,7 +157,7 @@ class Program:
 
     @staticmethod
     def parse_decls(tree) -> tuple[dict[str, Port], dict[str, Port]]:
-        ports = [Port.parse_decl(l) for l in tree.children]
+        ports = [Port.parse_decl(d) for d in tree.children]
         return (
             {p.name: p for p in ports if p.direction == Direction.IN},
             {p.name: p for p in ports if p.direction == Direction.OUT},
@@ -165,7 +165,7 @@ class Program:
 
     @staticmethod
     def parse_asgts(tree) -> list[Assignment]:
-        return [Assignment.parse(l) for l in tree.children]
+        return [Assignment.parse(a) for a in tree.children]
 
     @classmethod
     def parse(cls, tree) -> tuple["Program", Optional["Program"]]:
