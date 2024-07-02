@@ -4,7 +4,9 @@ from pysmt.shortcuts import (
     Solver,
     Symbol,
     Equals,
+    NotEquals,
     And,
+    Or,
     ForAll,
     to_smtlib,
     BV,
@@ -55,14 +57,9 @@ def equiv_formula(prog1: lang.Program, prog2: lang.Program) -> FNode:
     phi1 = prog_env_formula(prog1, env1)
     env2 = symbol_env(prog2, "prog2_")
     phi2 = prog_env_formula(prog2, env2)
-    in_constraints = [Equals(env1[port], env2[port]) for port in prog1.inputs]
-    out_constraints = [
-        Equals(env1[port], env2[port]) for port in prog1.outputs
-    ]
-    return ForAll(
-        env1.values(),
-        And(phi1, phi2, *(in_constraints + out_constraints)),
-    )
+    inputs = And(Equals(env1[port], env2[port]) for port in prog1.inputs)
+    outputs = Or(NotEquals(env1[port], env2[port]) for port in prog1.outputs)
+    return And(phi1, phi2, inputs, outputs)
 
 
 def to_smt(prog: lang.Program) -> str:
@@ -120,6 +117,6 @@ def equiv(prog1: lang.Program, prog2: lang.Program):
     phi = equiv_formula(prog1, prog2)
     model = solve(phi)
     if model:
-        print(model_vals(model))
+        print(model)
     else:
         print("equivalent")
