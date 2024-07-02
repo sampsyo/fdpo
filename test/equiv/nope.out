@@ -1,0 +1,6 @@
+not equivalent
+inputs:
+  left = 1
+  right = 0
+differing outputs:
+  res = 1 vs. 0

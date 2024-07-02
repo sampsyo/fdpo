@@ -1,3 +1,7 @@
 [envs.equiv-smt]
 command = "fdpo equiv-smt {args} < {filename}"
 output.smt = "-"
+
+[envs.equiv]
+command = "fdpo equiv {args} < {filename}"
+output.out = "-"
