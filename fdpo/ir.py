@@ -161,12 +161,7 @@ class Program:
         )
 
 
-
 def parse(program: str) -> Program:
     parser = lark.Lark(GRAMMAR, parser='earley')
     tree = parser.parse(program)
     return Program.parse(tree)
-
-
-if __name__ == "__main__":
-    fdpo()

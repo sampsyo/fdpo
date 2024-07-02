@@ -15,3 +15,7 @@ Home = "https://github.com/sampsyo/fdpo"
 
 [project.scripts]
 fdpo = "fdpo.__main__:main"
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
