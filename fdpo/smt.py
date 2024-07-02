@@ -17,6 +17,7 @@ from pysmt.fnode import FNode
 from pysmt import logics
 from itertools import chain
 import shutil
+from dataclasses import dataclass
 
 SymbolEnv = dict[str, FNode]
 Env = dict[str, int]
@@ -113,10 +114,35 @@ def run(prog: lang.Program, env: Env) -> Env:
     return {k: v for k, v in model.items() if k in prog.outputs}
 
 
-def equiv(prog1: lang.Program, prog2: lang.Program):
+@dataclass(frozen=True)
+class Counterexample:
+    inputs: Env
+    differing_outputs: dict[str, tuple[int, int]]
+
+
+def equiv(
+    prog1: lang.Program, prog2: lang.Program
+) -> Optional[Counterexample]:
+    """Check whether programs are equivalent, returning an example if not."""
     phi = equiv_formula(prog1, prog2)
     model = solve(phi)
-    if model:
-        print(model)
-    else:
-        print("equivalent")
+    if not model:
+        return None
+
+    # Found a counter-example. Let's belt-and-suspenders check that it's a
+    # real counter-example, and also extract the inputs & differing outputs.
+    inputs = {}
+    for port in prog1.inputs.values():
+        prog1_val = model[f"prog1_{port.name}"]
+        prog2_val = model[f"prog2_{port.name}"]
+        assert prog1_val == prog2_val, "differing input"
+        inputs[port.name] = prog1_val
+    differing_outputs = {}
+    for port in prog1.outputs.values():
+        prog1_val = model[f"prog1_{port.name}"]
+        prog2_val = model[f"prog2_{port.name}"]
+        if prog1_val != prog2_val:
+            differing_outputs[port.name] = (prog1_val, prog2_val)
+    assert differing_outputs, "no differing outputs"
+
+    return Counterexample(inputs, differing_outputs)

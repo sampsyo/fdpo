@@ -39,7 +39,17 @@ def main():
                 print(key, "=", value)
         case "equiv":
             assert prog2
-            equiv(prog1, prog2)
+            ce = equiv(prog1, prog2)
+            if ce:
+                print("not equivalent")
+                print("inputs:")
+                for key, value in ce.inputs.items():
+                    print(f"  {key} = {value}")
+                print("differing outputs:")
+                for key, (value1, value2) in ce.differing_outputs.items():
+                    print(f"  {key} = {value1} vs. {value2}")
+            else:
+                print("equivalent")
         case _:
             print(f"error: unknown mode {mode}", file=sys.stderr)
             sys.exit(1)
