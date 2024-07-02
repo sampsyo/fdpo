@@ -12,7 +12,7 @@ from pysmt.shortcuts import (
 )
 from pysmt.typing import BVType
 from pysmt.fnode import FNode
-from pysmt.logics import QF_BV
+from pysmt import logics
 from itertools import chain
 import shutil
 
@@ -75,11 +75,11 @@ def solver(name: str, debug: bool = False):
     match name:
         case "z3":
             smt_env.factory.add_generic_solver(
-                "z3", [shutil.which("z3"), "-smt2", "-in"], [QF_BV]
+                "z3", [shutil.which("z3"), "-smt2", "-in"], [logics.BV]
             )
         case "boolector":
             smt_env.factory.add_generic_solver(
-                "boolector", [shutil.which("boolector"), "--smt2"], [QF_BV]
+                "boolector", [shutil.which("boolector"), "--smt2"], [logics.BV]
             )
 
     options = {}
@@ -98,3 +98,13 @@ def run(prog: lang.Program, env: Env) -> Env:
         phi = And(prog_f, *env_constraints)
         model = get_model(phi)
     return {k: v for k, v in model_vals(model).items() if k in prog.outputs}
+
+
+def equiv(prog1: lang.Program, prog2: lang.Program):
+    with solver("z3"):
+        phi = equiv_formula(prog1, prog2)
+        model = get_model(phi)
+        if model:
+            print(model_vals(model))
+        else:
+            print("equivalent")

@@ -1,6 +1,6 @@
 from .lang import parse
 from .check import check, CheckError
-from .smt import prog_formula, equiv_formula, run
+from .smt import prog_formula, equiv_formula, run, equiv
 from pysmt.shortcuts import to_smtlib
 import sys
 
@@ -37,6 +37,9 @@ def main():
             inputs = parse_inputs(sys.argv[2:])
             for key, value in run(prog1, inputs).items():
                 print(key, "=", value)
+        case "equiv":
+            assert prog2
+            equiv(prog1, prog2)
         case _:
             print(f"error: unknown mode {mode}", file=sys.stderr)
             sys.exit(1)

@@ -1,0 +1,1 @@
+(let ((.def_0 (forall ((left (_ BitVec 32))(right (_ BitVec 32))(res (_ BitVec 32))) (let ((.def_0 (= res res))) (let ((.def_1 (= right right))) (let ((.def_2 (= left left))) (let ((.def_3 (= res right))) (let ((.def_4 (bvadd left right))) (let ((.def_5 (= res .def_4))) (let ((.def_6 (and .def_5 .def_3 .def_2 .def_1 .def_0))) .def_6)))))))))).def_0)
