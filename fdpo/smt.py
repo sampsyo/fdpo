@@ -1,3 +1,4 @@
+from typing import Optional
 from . import lang, lib
 from pysmt.shortcuts import (
     Solver,
@@ -7,7 +8,6 @@ from pysmt.shortcuts import (
     ForAll,
     to_smtlib,
     BV,
-    get_model,
     get_env,
 )
 from pysmt.typing import BVType
@@ -74,7 +74,7 @@ def model_vals(model) -> Env:
     return {key.symbol_name(): value.bv2nat() for key, value in model}
 
 
-def solver(name: str, debug: bool = False):
+def get_solver(name: str, debug: bool = False):
     # Do a mysterious global-state dance for pysmt to register solvers for later use.
     smt_env = get_env()
 
@@ -94,23 +94,32 @@ def solver(name: str, debug: bool = False):
     return Solver(name=name, solver_options=options)
 
 
+def solve(phi: FNode) -> Optional[Env]:
+    with get_solver("z3", False) as solver:
+        solver.add_assertion(phi)
+        if solver.solve():
+            return model_vals(solver.get_model())
+        else:
+            return None
+
+
 def run(prog: lang.Program, env: Env) -> Env:
-    with solver("z3"):
-        symb_env, prog_f = prog_formula(prog)
-        env_constraints = [
-            Equals(symb_env[var], BV(value, prog.inputs[var].width))
-            for var, value in env.items()
-        ]
-        phi = And(prog_f, *env_constraints)
-        model = get_model(phi)
-    return {k: v for k, v in model_vals(model).items() if k in prog.outputs}
+    symb_env, prog_f = prog_formula(prog)
+    env_constraints = [
+        Equals(symb_env[var], BV(value, prog.inputs[var].width))
+        for var, value in env.items()
+    ]
+    phi = And(prog_f, *env_constraints)
+
+    model = solve(phi)
+    assert model, "unsat"
+    return {k: v for k, v in model.items() if k in prog.outputs}
 
 
 def equiv(prog1: lang.Program, prog2: lang.Program):
-    with solver("z3"):
-        phi = equiv_formula(prog1, prog2)
-        model = get_model(phi)
-        if model:
-            print(model_vals(model))
-        else:
-            print("equivalent")
+    phi = equiv_formula(prog1, prog2)
+    model = solve(phi)
+    if model:
+        print(model_vals(model))
+    else:
+        print("equivalent")
