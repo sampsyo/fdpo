@@ -1,3 +1,3 @@
 in x: 32;
 out y: 32;
-y = add(x);
+y = add[32](x);

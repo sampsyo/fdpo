@@ -11,13 +11,14 @@ def check_expr(prog: lang.Program, expr: lang.Expression) -> int:
         func = lib.FUNCTIONS.get(expr.func)
         if not func:
             raise CheckError(f"unknown function {expr.func}")
-        if len(expr.args) != func.inputs:
+        if len(expr.inputs) != func.inputs:
             raise CheckError(
                 f"{expr.func} expects {func.inputs} arguments "
-                f"but call has {len(expr.args)} arguments"
+                f"but call has {len(expr.inputs)} arguments"
             )
-        for arg in expr.args:
-            return check_expr(prog, arg)
+        for arg in expr.inputs:
+            arg_width = check_expr(prog, arg)
+            # TODO
         return 32  # TODO
     elif isinstance(expr, lang.Lookup):
         port = prog.inputs.get(expr.var)
@@ -36,7 +37,6 @@ def check_asgt(prog: lang.Program, asgt: lang.Assignment):
             f"width mismatch: {asgt.dest} has width {dest_width}, "
             f"but expression has width {expr_width}"
         )
-    assert expr_width == dest_width, "width mismatch"
 
 
 def check(prog: lang.Program):

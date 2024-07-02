@@ -9,7 +9,7 @@ prog: decl* asgt*
 
 asgt: ident "=" expr ";"
 ?expr: ident | call
-call: ident "(" list{expr} ")"
+call: ident "[" list{INT} "]" "(" list{expr} ")"
 
 decl: dir WS ident ":" width ";"
 dir: "in" -> in | "out" -> out
@@ -70,33 +70,40 @@ class Port:
         return f"{self.direction} {self.name}: {self.width};"
 
 
+def _tree_list(tree) -> list:
+    """Get the list of subtrees from a parse tree."""
+    # We either have a list of subtrees, a single thing, or None if the
+    # list is empty. Maybe this is fixable with a better grammar?
+    if isinstance(tree, lark.Tree) and tree.data == "list":
+        return tree.children
+    elif isinstance(tree, lark.Token):
+        return [tree]
+    elif tree is None:
+        return []
+    else:
+        assert False
+
+
 @dataclass(frozen=True)
 class Call:
     func: str
-    args: list["Expression"]
+    params: list[int]
+    inputs: list["Expression"]
 
     @classmethod
     def parse(cls, tree) -> "Call":
         assert tree.data == "call"
-        func, args_tree = tree.children
-
-        # We either have a list of arguments or a single argument. Maybe
-        # this is fixable with a better grammar?
-        if isinstance(args_tree, lark.Tree) and args_tree.data == "list":
-            arg_trees = args_tree.children
-        elif isinstance(args_tree, lark.Token):
-            arg_trees = [args_tree]
-        else:
-            assert False
-
+        func, params, inputs = tree.children
         return cls(
             str(func),
-            [parse_expr(t) for t in arg_trees],
+            [int(t) for t in _tree_list(params)],
+            [parse_expr(t) for t in _tree_list(inputs)],
         )
 
     def pretty(self) -> str:
-        args = ", ".join(a.pretty() for a in self.args)
-        return f"{self.func}({args})"
+        params = ", ".join(str(p) for p in self.params)
+        inputs = ", ".join(a.pretty() for a in self.inputs)
+        return f"{self.func}[{params}]({inputs})"
 
 
 @dataclass(frozen=True)
