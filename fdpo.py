@@ -31,21 +31,23 @@ class Direction(enum.Enum):
     OUT = 1
 
     @classmethod
-    def parse(cls, tree):
+    def parse(cls, tree) -> 'Direction':
         match tree.data:
             case "in":
                 return cls.IN
             case "out":
                 return cls.OUT
             case _:
-                return False
+                assert False
 
-    def __str__(self):
+    def __str__(self) -> str:
         match self:
             case self.IN:
                 return "in"
             case self.OUT:
                 return "out"
+            case _:
+                assert False
 
 
 @dataclass(frozen=True)
@@ -55,7 +57,7 @@ class Port:
     width: int
 
     @classmethod
-    def parse_decl(cls, tree):
+    def parse_decl(cls, tree) -> 'Port':
         dir_t, _, name, width = tree.children
         return cls(
             str(name),
@@ -63,17 +65,17 @@ class Port:
             int(width),
         )
 
-    def pretty(self):
+    def pretty(self) -> str:
         return f"{self.direction} {self.name} = {self.width};"
 
 
 @dataclass(frozen=True)
 class Call:
     func: str
-    args: list[str]  # TODO
+    args: list['Expression']
 
     @classmethod
-    def parse(cls, tree):
+    def parse(cls, tree) -> 'Call':
         assert tree.data == "call"
         func, args_tree = tree.children
         assert args_tree.data == "list"
@@ -82,30 +84,35 @@ class Call:
             [parse_expr(t) for t in args_tree.children],
         )
 
-    def pretty(self):
-        args = ", ".join(
-            pretty_expr(a) for a in self.args
-        )
+    def pretty(self) -> str:
+        args = ", ".join(a.pretty() for a in self.args)
         return f"{self.func}({args})"
 
 
-def parse_expr(tree):
+@dataclass(frozen=True)
+class Lookup:
+    var: str
+
+    def pretty(self) -> str:
+        return self.var
+
+
+Expression = Call | Lookup
+
+
+def parse_expr(tree) -> Expression:
     if isinstance(tree, lark.Token):
-        return str(tree)
+        return Lookup(str(tree))
     elif tree.data == "call":
         return Call.parse(tree)
     else:
         assert False, "unknown expr type"
 
 
-def pretty_expr(expr):
-    return expr if isinstance(expr, str) else expr.pretty()
-
-
 @dataclass(frozen=True)
 class Assignment:
     dest: str
-    src: str  # TODO
+    expr: Expression
 
     @classmethod
     def parse(cls, tree):
@@ -116,7 +123,7 @@ class Assignment:
         )
 
     def pretty(self):
-        return f"{self.dest} = {pretty_expr(self.src)};"
+        return f"{self.dest} = {self.expr.pretty()};"
 
 
 @dataclass(frozen=True)
