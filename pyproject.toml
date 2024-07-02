@@ -8,7 +8,7 @@ authors = [{ name = "Adrian Sampson", email = "asampson@cs.cornell.edu" }]
 license = { file = "LICENSE" }
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
-dependencies = ["lark", "pysmt"]
+dependencies = ["lark", "pysmt", "ollama"]
 
 [project.urls]
 Home = "https://github.com/sampsyo/fdpo"
