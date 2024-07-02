@@ -11,10 +11,15 @@ def check_expr(prog: lang.Program, expr: lang.Expression) -> int:
         func = lib.FUNCTIONS.get(expr.func)
         if not func:
             raise CheckError(f"unknown function {expr.func}")
+        if len(expr.params) != func.params:
+            raise CheckError(
+                f"{expr.func} expects {func.inputs} parameters "
+                f"but call has {len(expr.inputs)} parameters"
+            )
         if len(expr.inputs) != func.inputs:
             raise CheckError(
-                f"{expr.func} expects {func.inputs} arguments "
-                f"but call has {len(expr.inputs)} arguments"
+                f"{expr.func} expects {func.inputs} inputs "
+                f"but call has {len(expr.inputs)} inputs"
             )
         for arg in expr.inputs:
             arg_width = check_expr(prog, arg)
