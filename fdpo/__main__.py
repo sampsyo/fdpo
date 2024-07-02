@@ -1,0 +1,12 @@
+from .ir import parse
+import sys
+
+
+def fdpo():
+    src = sys.stdin.read()
+    prog = parse(src)
+    print(prog.pretty())
+
+
+if __name__ == "__main__":
+    fdpo()

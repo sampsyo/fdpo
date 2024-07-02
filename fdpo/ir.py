@@ -162,13 +162,10 @@ class Program:
 
 
 
-def fdpo():
-    import sys
+def parse(program: str) -> Program:
     parser = lark.Lark(GRAMMAR, parser='earley')
-    src = sys.stdin.read()
-    ast = parser.parse(src)
-    prog = Program.parse(ast)
-    print(prog.pretty())
+    tree = parser.parse(program)
+    return Program.parse(tree)
 
 
 if __name__ == "__main__":
