@@ -26,12 +26,13 @@ dir: "in" -> in | "out" -> out
 %ignore WS
 """
 
+
 class Direction(enum.Enum):
     IN = 0
     OUT = 1
 
     @classmethod
-    def parse(cls, tree) -> 'Direction':
+    def parse(cls, tree) -> "Direction":
         match tree.data:
             case "in":
                 return cls.IN
@@ -57,7 +58,7 @@ class Port:
     width: int
 
     @classmethod
-    def parse_decl(cls, tree) -> 'Port':
+    def parse_decl(cls, tree) -> "Port":
         dir_t, _, name, width = tree.children
         return cls(
             str(name),
@@ -72,10 +73,10 @@ class Port:
 @dataclass(frozen=True)
 class Call:
     func: str
-    args: list['Expression']
+    args: list["Expression"]
 
     @classmethod
-    def parse(cls, tree) -> 'Call':
+    def parse(cls, tree) -> "Call":
         assert tree.data == "call"
         func, args_tree = tree.children
         assert args_tree.data == "list"
@@ -115,7 +116,7 @@ class Assignment:
     expr: Expression
 
     @classmethod
-    def parse(cls, tree) -> 'Assignment':
+    def parse(cls, tree) -> "Assignment":
         lhs, rhs = tree.children
         return cls(
             str(lhs),
@@ -133,7 +134,7 @@ class Program:
     assignments: list[Assignment]
 
     @classmethod
-    def parse(cls, tree) -> 'Program':
+    def parse(cls, tree) -> "Program":
         assert tree.data == "prog"
 
         ports = []
@@ -155,13 +156,13 @@ class Program:
 
     def pretty(self) -> str:
         return "\n".join(
-            [p.pretty() for p in self.inputs] +
-            [p.pretty() for p in self.outputs] +
-            [a.pretty() for a in self.assignments]
+            [p.pretty() for p in self.inputs]
+            + [p.pretty() for p in self.outputs]
+            + [a.pretty() for a in self.assignments]
         )
 
 
 def parse(program: str) -> Program:
-    parser = lark.Lark(GRAMMAR, parser='earley')
+    parser = lark.Lark(GRAMMAR, parser="earley")
     tree = parser.parse(program)
     return Program.parse(tree)

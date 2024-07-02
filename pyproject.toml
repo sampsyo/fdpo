@@ -19,3 +19,6 @@ fdpo = "fdpo.__main__:main"
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
+
+[tool.ruff]
+line-length = 79

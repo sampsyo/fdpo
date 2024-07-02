@@ -1,5 +1,5 @@
 {
-  "language_overrides": {
+  "languages": {
     "Python": {
       "formatter": {
         "external": {
