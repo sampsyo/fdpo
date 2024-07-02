@@ -42,12 +42,7 @@ def main():
             ce = equiv(prog1, prog2)
             if ce:
                 print("not equivalent")
-                print("inputs:")
-                for key, value in ce.inputs.items():
-                    print(f"  {key} = {value}")
-                print("differing outputs:")
-                for key, (value1, value2) in ce.differing_outputs.items():
-                    print(f"  {key} = {value1} vs. {value2}")
+                ce.print()
             else:
                 print("equivalent")
         case _:
