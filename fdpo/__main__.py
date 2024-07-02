@@ -11,10 +11,12 @@ def parse_inputs(args: list[str]) -> dict[str, int]:
 
 def main():
     src = sys.stdin.read()
-    prog = parse(src)
+    prog1, prog2 = parse(src)
 
     try:
-        check(prog)
+        check(prog1)
+        if prog2:
+            check(prog2)
     except CheckError as e:
         print(f"error: {e.message}", file=sys.stderr)
         sys.exit(1)
@@ -22,12 +24,12 @@ def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "print"
     match mode:
         case "print":
-            print(prog.pretty())
+            print(prog1.pretty())
         case "smt":
-            print(to_smt(prog))
+            print(to_smt(prog1))
         case "run":
             inputs = parse_inputs(sys.argv[2:])
-            for key, value in run(prog, inputs).items():
+            for key, value in run(prog1, inputs).items():
                 print(key, "=", value)
         case _:
             print(f"error: unknown mode {mode}", file=sys.stderr)

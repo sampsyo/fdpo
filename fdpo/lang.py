@@ -1,3 +1,4 @@
+from typing import Optional
 import lark
 import enum
 from dataclasses import dataclass
@@ -167,13 +168,15 @@ class Program:
         return [Assignment.parse(l) for l in tree.children]
 
     @classmethod
-    def parse(cls, tree) -> "Program":
+    def parse(cls, tree) -> tuple["Program", Optional["Program"]]:
         assert tree.data == "prog"
 
-        decls_tree, asgts_tree = tree.children
-        inputs, outputs = cls.parse_decls(decls_tree)
-        asgts = cls.parse_asgts(asgts_tree)
-        return cls(inputs, outputs, asgts)
+        decls, asgts1, asgts2 = tree.children
+        inputs, outputs = cls.parse_decls(decls)
+        return (
+            cls(inputs, outputs, cls.parse_asgts(asgts1)),
+            cls(inputs, outputs, cls.parse_asgts(asgts2)) if asgts2 else None,
+        )
 
     def pretty(self) -> str:
         return "\n".join(
@@ -183,7 +186,7 @@ class Program:
         )
 
 
-def parse(program: str) -> Program:
+def parse(program: str) -> tuple[Program, Optional[Program]]:
     parser = lark.Lark(GRAMMAR, parser="earley")
     tree = parser.parse(program)
     return Program.parse(tree)
