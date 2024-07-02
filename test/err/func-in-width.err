@@ -1,0 +1,1 @@
+error: width mismatch: input 2 to add[32] has width 32, but expression has width 8
