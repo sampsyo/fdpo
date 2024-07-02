@@ -115,14 +115,14 @@ class Assignment:
     expr: Expression
 
     @classmethod
-    def parse(cls, tree):
+    def parse(cls, tree) -> 'Assignment':
         lhs, rhs = tree.children
         return cls(
             str(lhs),
             parse_expr(rhs),
         )
 
-    def pretty(self):
+    def pretty(self) -> str:
         return f"{self.dest} = {self.expr.pretty()};"
 
 
@@ -133,7 +133,7 @@ class Program:
     assignments: list[Assignment]
 
     @classmethod
-    def parse(cls, tree):
+    def parse(cls, tree) -> 'Program':
         assert tree.data == "prog"
 
         ports = []
@@ -153,7 +153,7 @@ class Program:
             asgts,
         )
 
-    def pretty(self):
+    def pretty(self) -> str:
         return "\n".join(
             [p.pretty() for p in self.inputs] +
             [p.pretty() for p in self.outputs] +
