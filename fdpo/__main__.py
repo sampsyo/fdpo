@@ -1,5 +1,6 @@
 from .lang import parse
 from .check import check, CheckError
+from .smt import to_smt
 import sys
 
 
@@ -13,7 +14,15 @@ def main():
         print(f"error: {e.message}", file=sys.stderr)
         sys.exit(1)
 
-    print(prog.pretty())
+    mode = sys.argv[1] if len(sys.argv) > 1 else "print"
+    match mode:
+        case "print":
+            print(prog.pretty())
+        case "smt":
+            print(to_smt(prog))
+        case _:
+            print(f"error: unknown mode {mode}", file=sys.stderr)
+            sys.exit(1)
 
 
 if __name__ == "__main__":
