@@ -129,8 +129,8 @@ class Assignment:
 
 @dataclass(frozen=True)
 class Program:
-    inputs: list[Port]
-    outputs: list[Port]
+    inputs: dict[str, Port]
+    outputs: dict[str, Port]
     assignments: list[Assignment]
 
     @classmethod
@@ -149,15 +149,15 @@ class Program:
                     assert False, f"unknown line {line.data}"
 
         return cls(
-            [p for p in ports if p.direction == Direction.IN],
-            [p for p in ports if p.direction == Direction.OUT],
+            {p.name: p for p in ports if p.direction == Direction.IN},
+            {p.name: p for p in ports if p.direction == Direction.OUT},
             asgts,
         )
 
     def pretty(self) -> str:
         return "\n".join(
-            [p.pretty() for p in self.inputs]
-            + [p.pretty() for p in self.outputs]
+            [p.pretty() for p in self.inputs.values()]
+            + [p.pretty() for p in self.outputs.values()]
             + [a.pretty() for a in self.assignments]
         )
 
