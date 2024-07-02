@@ -1,0 +1,3 @@
+[envs.print]
+command = "fdpo < {filename}"
+output.nl = "-"
