@@ -2,7 +2,7 @@ import lark
 import enum
 from dataclasses import dataclass
 
-GRAMMAR = """
+GRAMMAR = r"""
 ?start: prog
 
 prog: decl* asgt*
@@ -19,11 +19,14 @@ dir: "in" -> in | "out" -> out
 
 ?list{item}: [item ("," item)* ","?]
 
+COMMENT: "#" /[^\n]*/ "\n"
+
 %import common.WS
 %import common.CNAME
 %import common.INT
 
 %ignore WS
+%ignore COMMENT
 """
 
 
