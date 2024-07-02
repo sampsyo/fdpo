@@ -4,6 +4,7 @@ from pysmt.shortcuts import (
     Symbol,
     Equals,
     And,
+    ForAll,
     to_smtlib,
     BV,
     get_model,
@@ -19,30 +20,47 @@ SymbolEnv = dict[str, FNode]
 Env = dict[str, int]
 
 
-def expr_to_smt(ports: SymbolEnv, expr: lang.Expression):
+def expr_to_smt(env: SymbolEnv, expr: lang.Expression):
     if isinstance(expr, lang.Lookup):
-        return ports[expr.var]
+        return env[expr.var]
     elif isinstance(expr, lang.Call):
-        args = [expr_to_smt(ports, arg) for arg in expr.inputs]
+        args = [expr_to_smt(env, arg) for arg in expr.inputs]
         return lib.FUNCTIONS[expr.func].smt(args)
     else:
         assert False
 
 
-def to_formula(prog: lang.Program) -> tuple[SymbolEnv, FNode]:
-    ports = {
+def symbol_env(prog: lang.Program) -> SymbolEnv:
+    return {
         port.name: Symbol(port.name, BVType(port.width))
         for port in chain(prog.inputs.values(), prog.outputs.values())
     }
+
+
+def prog_formula(prog: lang.Program) -> tuple[SymbolEnv, FNode]:
+    env = symbol_env(prog)
     constraints = [
-        Equals(ports[asgt.dest], expr_to_smt(ports, asgt.expr))
+        Equals(env[asgt.dest], expr_to_smt(env, asgt.expr))
         for asgt in prog.assignments
     ]
-    return ports, And(*constraints)
+    return env, And(*constraints)
+
+
+def equiv_formula(prog1: lang.Program, prog2: lang.Program) -> FNode:
+    env1, phi1 = prog_formula(prog1)
+    env2, phi2 = prog_formula(prog2)
+    in_constraints = [Equals(env1[port], env2[port]) for port in prog1.inputs]
+    out_constraints = [
+        Equals(env1[port], env2[port]) for port in prog1.outputs
+    ]
+    return ForAll(
+        env1.values(),
+        And(phi1, phi2, *(in_constraints + out_constraints)),
+    )
 
 
 def to_smt(prog: lang.Program) -> str:
-    return to_smtlib(to_formula(prog))
+    return to_smtlib(prog_formula(prog)[1])
 
 
 def model_vals(model) -> Env:
@@ -72,9 +90,9 @@ def solver(name: str, debug: bool = False):
 
 def run(prog: lang.Program, env: Env) -> Env:
     with solver("z3"):
-        ports, prog_f = to_formula(prog)
+        symb_env, prog_f = prog_formula(prog)
         env_constraints = [
-            Equals(ports[var], BV(value, prog.inputs[var].width))
+            Equals(symb_env[var], BV(value, prog.inputs[var].width))
             for var, value in env.items()
         ]
         phi = And(prog_f, *env_constraints)

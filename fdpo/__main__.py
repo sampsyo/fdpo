@@ -1,6 +1,7 @@
 from .lang import parse
 from .check import check, CheckError
-from .smt import to_smt, run
+from .smt import prog_formula, equiv_formula, run
+from pysmt.shortcuts import to_smtlib
 import sys
 
 
@@ -26,7 +27,12 @@ def main():
         case "print":
             print(prog1.pretty())
         case "smt":
-            print(to_smt(prog1))
+            _, phi = prog_formula(prog1)
+            print(to_smtlib(phi))
+        case "equiv-smt":
+            assert prog2
+            phi = equiv_formula(prog1, prog2)
+            print(to_smtlib(phi))
         case "run":
             inputs = parse_inputs(sys.argv[2:])
             for key, value in run(prog1, inputs).items():
