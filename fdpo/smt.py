@@ -30,25 +30,31 @@ def expr_to_smt(env: SymbolEnv, expr: lang.Expression):
         assert False
 
 
-def symbol_env(prog: lang.Program) -> SymbolEnv:
+def symbol_env(prog: lang.Program, prefix: str = "") -> SymbolEnv:
     return {
-        port.name: Symbol(port.name, BVType(port.width))
+        port.name: Symbol(f"{prefix}{port.name}", BVType(port.width))
         for port in chain(prog.inputs.values(), prog.outputs.values())
     }
 
 
-def prog_formula(prog: lang.Program) -> tuple[SymbolEnv, FNode]:
-    env = symbol_env(prog)
+def prog_env_formula(prog: lang.Program, env: SymbolEnv) -> FNode:
     constraints = [
         Equals(env[asgt.dest], expr_to_smt(env, asgt.expr))
         for asgt in prog.assignments
     ]
-    return env, And(*constraints)
+    return And(*constraints)
+
+
+def prog_formula(prog: lang.Program) -> tuple[SymbolEnv, FNode]:
+    env = symbol_env(prog)
+    return env, prog_env_formula(prog, env)
 
 
 def equiv_formula(prog1: lang.Program, prog2: lang.Program) -> FNode:
-    env1, phi1 = prog_formula(prog1)
-    env2, phi2 = prog_formula(prog2)
+    env1 = symbol_env(prog1, "prog1_")
+    phi1 = prog_env_formula(prog1, env1)
+    env2 = symbol_env(prog2, "prog2_")
+    phi2 = prog_env_formula(prog2, env2)
     in_constraints = [Equals(env1[port], env2[port]) for port in prog1.inputs]
     out_constraints = [
         Equals(env1[port], env2[port]) for port in prog1.outputs
