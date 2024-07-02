@@ -67,7 +67,7 @@ class Port:
         )
 
     def pretty(self) -> str:
-        return f"{self.direction} {self.name} = {self.width};"
+        return f"{self.direction} {self.name}: {self.width};"
 
 
 @dataclass(frozen=True)
