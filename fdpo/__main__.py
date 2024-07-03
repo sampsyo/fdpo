@@ -5,6 +5,7 @@ from .ask import Asker
 from pysmt.shortcuts import to_smtlib
 import sys
 import tomllib
+import os
 
 
 def parse_inputs(args: list[str]) -> dict[str, int]:
@@ -18,7 +19,8 @@ def print_env(env: dict[str, int]) -> None:
 
 
 def load_config() -> dict:
-    with open("config.toml", "rb") as f:
+    config_path = os.path.expanduser("~/.config/fdpo.toml")
+    with open(config_path, "rb") as f:
         return tomllib.load(f)
 
 
