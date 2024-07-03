@@ -4,6 +4,10 @@ import tomllib
 import jinja2
 from . import lang
 import re
+import logging
+import sys
+
+LOG = logging.getLogger("fdpo")
 
 
 def parse_env(s: str) -> dict[str, int]:
@@ -25,16 +29,20 @@ class Asker:
         return template.render(**kwargs)
 
     async def interact(self, prompt: str):
-        print(prompt)
-        print("---")
+        LOG.debug("Sending prompt:\n%s", prompt)
         resp = await self.client.generate(
             model=self.model, prompt=prompt, stream=True
         )
         out = []
+        LOG.debug("Receiving response.")
         async for part in resp:  # type: ignore
             text = part["response"]
-            print(text, end="", flush=True)
+            if LOG.level <= logging.DEBUG:
+                print(text, end="", file=sys.stderr, flush=True)
             out.append(text)
+        if LOG.level <= logging.DEBUG:
+            print(file=sys.stderr, flush=True)
+        LOG.debug("Response finished with %s parts.", len(out))
         return "".join(out)
 
     def run(

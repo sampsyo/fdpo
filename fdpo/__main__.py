@@ -6,6 +6,9 @@ from pysmt.shortcuts import to_smtlib
 import sys
 import tomllib
 import os
+import logging
+
+LOG = logging.getLogger("fdpo")
 
 
 def parse_inputs(args: list[str]) -> dict[str, int]:
@@ -20,11 +23,21 @@ def print_env(env: dict[str, int]) -> None:
 
 def load_config() -> dict:
     config_path = os.path.expanduser("~/.config/fdpo.toml")
-    with open(config_path, "rb") as f:
-        return tomllib.load(f)
+    try:
+        with open(config_path, "rb") as f:
+            return tomllib.load(f)
+    except OSError:
+        return {}
 
 
 def main():
+    config = load_config()
+    LOG.addHandler(logging.StreamHandler())
+    if config.get("verbose"):
+        LOG.setLevel(logging.DEBUG)
+    else:
+        LOG.setLevel(logging.INFO)
+
     src = sys.stdin.read()
     prog1, prog2 = parse(src)
 
@@ -59,7 +72,6 @@ def main():
             else:
                 print("equivalent")
         case "ask-run":
-            config = load_config()
             inputs = parse_inputs(sys.argv[2:])
             print_env(Asker(config).run(prog1, inputs))
         case _:
