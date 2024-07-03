@@ -12,14 +12,17 @@ def parse_inputs(args: list[str]) -> dict[str, int]:
     return {key: int(value) for key, value in (arg.split("=") for arg in args)}
 
 
+def print_env(env: dict[str, int]) -> None:
+    for key, value in env.items():
+        print(f"{key} = {value}")
+
+
 def load_config() -> dict:
     with open("config.toml", "rb") as f:
         return tomllib.load(f)
 
 
 def main():
-    config = load_config()
-
     src = sys.stdin.read()
     prog1, prog2 = parse(src)
 
@@ -44,8 +47,7 @@ def main():
             print(to_smtlib(phi))
         case "run":
             inputs = parse_inputs(sys.argv[2:])
-            for key, value in run(prog1, inputs).items():
-                print(key, "=", value)
+            print_env(run(prog1, inputs))
         case "equiv":
             assert prog2
             ce = equiv(prog1, prog2)
@@ -55,8 +57,9 @@ def main():
             else:
                 print("equivalent")
         case "ask-run":
+            config = load_config()
             inputs = parse_inputs(sys.argv[2:])
-            Asker(config).run(prog1, inputs)
+            print_env(Asker(config).run(prog1, inputs))
         case _:
             print(f"error: unknown mode {mode}", file=sys.stderr)
             sys.exit(1)

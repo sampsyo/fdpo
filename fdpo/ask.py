@@ -3,6 +3,13 @@ from ollama import AsyncClient
 import tomllib
 import jinja2
 from . import lang
+import re
+
+
+def parse_env(s: str) -> dict[str, int]:
+    return {
+        name: int(val) for name, val in re.findall(r"^(\w+) = (\d+)$", s, re.M)
+    }
 
 
 class Asker:
@@ -23,10 +30,17 @@ class Asker:
         resp = await self.client.generate(
             model=self.model, prompt=prompt, stream=True
         )
+        out = []
         async for part in resp:  # type: ignore
-            print(part["response"], end="", flush=True)
+            text = part["response"]
+            print(text, end="", flush=True)
+            out.append(text)
+        return "".join(out)
 
-    def run(self, prog: lang.Program, inputs: dict[str, int]):
+    def run(
+        self, prog: lang.Program, inputs: dict[str, int]
+    ) -> dict[str, int]:
         input_str = "\n".join(f"{k} = {v}" for k, v in inputs.items())
         prompt = self.prompt("run.md", prog=prog.pretty(), invals=input_str)
-        asyncio.run(self.interact(prompt))
+        res = asyncio.run(self.interact(prompt))
+        return parse_env(res)
