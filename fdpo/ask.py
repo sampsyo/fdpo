@@ -10,9 +10,8 @@ code; no text is necessary.
 
 async def interact(host, model):
     client = AsyncClient(host=host)
-    async for part in await client.generate(
-        model=model, prompt=PROMPT, stream=True
-    ):
+    resp = await client.generate(model=model, prompt=PROMPT, stream=True)
+    async for part in resp:  # type: ignore
         print(part["response"], end="", flush=True)
 
 
