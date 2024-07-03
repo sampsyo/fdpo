@@ -2,6 +2,7 @@ import asyncio
 from ollama import AsyncClient
 import tomllib
 import jinja2
+from . import lang
 
 
 class Asker:
@@ -23,6 +24,7 @@ class Asker:
         async for part in resp:  # type: ignore
             print(part["response"], end="", flush=True)
 
-    def do_something(self):
-        prompt = self.prompt("smoke.md")
+    def run(self, prog: lang.Program, inputs: dict[str, int]):
+        input_str = "\n".join(f"{k} = {v}" for k, v in inputs.items())
+        prompt = self.prompt("run.md", prog=prog.pretty(), inputs=input_str)
         asyncio.run(self.interact(prompt))

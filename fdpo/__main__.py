@@ -54,8 +54,9 @@ def main():
                 ce.print()
             else:
                 print("equivalent")
-        case "ask":
-            Asker(config).do_something()
+        case "ask-run":
+            inputs = parse_inputs(sys.argv[2:])
+            Asker(config).run(prog1, inputs)
         case _:
             print(f"error: unknown mode {mode}", file=sys.stderr)
             sys.exit(1)
