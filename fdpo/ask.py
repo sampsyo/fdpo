@@ -2,7 +2,7 @@ import asyncio
 from ollama import AsyncClient
 import tomllib
 import jinja2
-from . import lang
+from . import lang, smt
 import re
 import logging
 import sys
@@ -63,9 +63,18 @@ class Asker:
         res = asyncio.run(self.interact(prompt))
         return parse_env(res)
 
-    def opt(self, prog: lang.Program):
+    def opt(self, prog: lang.Program) -> lang.Program:
+        # Ask for an optimized program.
         prompt = self.prompt("opt.md", prog=prog.pretty())
         code = extract_code(asyncio.run(self.interact(prompt)))
-        assert code
-        new_prog = lang.parse_body(code, prog)
-        print(new_prog.pretty())
+        assert code  # TODO: Send feedback and ask again.
+        new_prog = lang.parse_body(code, prog)  # TODO: Catch syntax errors.
+
+        # Check equivalence.
+        ce = smt.equiv(prog, new_prog)
+        if ce:
+            # TODO: Send counter-example as feedback.
+            ce.print()
+            assert False
+
+        return new_prog
