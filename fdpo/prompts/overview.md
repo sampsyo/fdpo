@@ -24,3 +24,7 @@ expresses the 4-bit addition of 4-bit signals `left` and `right`. For this
 assignment to be valid, `left` and `right` must already be declared as `in`
 ports, `sum` must be declared as an `out` port, and all of them must be
 declared to have 4 bits. The order of assignments does not matter.
+
+The language does not have infix operators like `+`. The only thing you can
+do in expressions is call functions, like `add[4]`. Functions like this are
+parameterized by the bit widths they operate on, written in square brackets.

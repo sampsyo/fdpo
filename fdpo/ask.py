@@ -52,3 +52,7 @@ class Asker:
         prompt = self.prompt("run.md", prog=prog.pretty(), invals=input_str)
         res = asyncio.run(self.interact(prompt))
         return parse_env(res)
+
+    def opt(self, prog: lang.Program):
+        prompt = self.prompt("opt.md", prog=prog.pretty())
+        asyncio.run(self.interact(prompt))

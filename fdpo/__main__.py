@@ -74,6 +74,8 @@ def main():
         case "ask-run":
             inputs = parse_inputs(sys.argv[2:])
             print_env(Asker(config).run(prog1, inputs))
+        case "ask-opt":
+            Asker(config).opt(prog1)
         case _:
             print(f"error: unknown mode {mode}", file=sys.stderr)
             sys.exit(1)
