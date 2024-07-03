@@ -4,24 +4,25 @@ import tomllib
 import jinja2
 
 
-async def interact(host, model, prompt):
-    client = AsyncClient(host=host)
-    resp = await client.generate(model=model, prompt=prompt, stream=True)
-    async for part in resp:  # type: ignore
-        print(part["response"], end="", flush=True)
+class Asker:
+    def __init__(self, config: dict):
+        self.client = AsyncClient(host=config["host"])
+        self.model = config["model"]
+        self.jinja = jinja2.Environment(
+            loader=jinja2.PackageLoader("fdpo", "prompts"),
+        )
 
+    def prompt(self, filename: str, **kwargs) -> str:
+        template = self.jinja.get_template(filename)
+        return template.render(**kwargs)
 
-def do_something():
-    jinja = jinja2.Environment(
-        loader=jinja2.PackageLoader("fdpo", "prompts"),
-    )
-    template = jinja.get_template("smoke.md")
-    prompt = template.render()
+    async def interact(self, prompt: str):
+        resp = await self.client.generate(
+            model=self.model, prompt=prompt, stream=True
+        )
+        async for part in resp:  # type: ignore
+            print(part["response"], end="", flush=True)
 
-    with open("config.toml", "rb") as f:
-        config = tomllib.load(f)
-    asyncio.run(interact(config["host"], config["model"], prompt))
-
-
-if __name__ == "__main__":
-    do_something()
+    def do_something(self):
+        prompt = self.prompt("smoke.md")
+        asyncio.run(self.interact(prompt))

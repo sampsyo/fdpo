@@ -1,8 +1,10 @@
 from .lang import parse
 from .check import check, CheckError
 from .smt import prog_formula, equiv_formula, run, equiv
+from .ask import Asker
 from pysmt.shortcuts import to_smtlib
 import sys
+import tomllib
 
 
 def parse_inputs(args: list[str]) -> dict[str, int]:
@@ -10,7 +12,14 @@ def parse_inputs(args: list[str]) -> dict[str, int]:
     return {key: int(value) for key, value in (arg.split("=") for arg in args)}
 
 
+def load_config() -> dict:
+    with open("config.toml", "rb") as f:
+        return tomllib.load(f)
+
+
 def main():
+    config = load_config()
+
     src = sys.stdin.read()
     prog1, prog2 = parse(src)
 
@@ -45,6 +54,8 @@ def main():
                 ce.print()
             else:
                 print("equivalent")
+        case "ask":
+            Asker(config).do_something()
         case _:
             print(f"error: unknown mode {mode}", file=sys.stderr)
             sys.exit(1)
