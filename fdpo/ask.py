@@ -6,6 +6,7 @@ from . import lang
 import re
 import logging
 import sys
+from typing import Optional
 
 LOG = logging.getLogger("fdpo")
 
@@ -14,6 +15,15 @@ def parse_env(s: str) -> dict[str, int]:
     return {
         name: int(val) for name, val in re.findall(r"^(\w+) = (\d+)$", s, re.M)
     }
+
+
+def extract_code(s: str) -> Optional[str]:
+    """Extract a Markdown fenced code block from the string."""
+    parts = re.split(r"^```$", s, 2, re.M)
+    if len(parts) >= 3:
+        return parts[1]
+    else:
+        return None
 
 
 class Asker:
@@ -55,4 +65,7 @@ class Asker:
 
     def opt(self, prog: lang.Program):
         prompt = self.prompt("opt.md", prog=prog.pretty())
-        asyncio.run(self.interact(prompt))
+        code = extract_code(asyncio.run(self.interact(prompt)))
+        assert code
+        new_prog = lang.parse_body(code, prog)
+        print(new_prog.pretty())

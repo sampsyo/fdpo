@@ -4,8 +4,6 @@ import enum
 from dataclasses import dataclass
 
 GRAMMAR = r"""
-?start: prog
-
 prog: decls asgts ["---" asgts]
 decls: decl*
 asgts: asgt*
@@ -187,6 +185,13 @@ class Program:
 
 
 def parse(program: str) -> tuple[Program, Optional[Program]]:
-    parser = lark.Lark(GRAMMAR, parser="earley")
+    parser = lark.Lark(GRAMMAR, parser="earley", start="prog")
     tree = parser.parse(program)
     return Program.parse(tree)
+
+
+def parse_body(asgts: str, other_prog: Program) -> Program:
+    parser = lark.Lark(GRAMMAR, parser="earley", start="asgts")
+    tree = parser.parse(asgts)
+    body = Program.parse_asgts(tree)
+    return Program(other_prog.inputs, other_prog.outputs, body)

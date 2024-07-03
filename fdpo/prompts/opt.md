@@ -15,4 +15,5 @@ Please write the new program. Do not include the `in` and `out` lines; we can
 reuse those from our starter program.
 
 There is no need for any additional justification unless you have specific
-concerns; mostly, we just need the code in our little language.
+concerns; mostly, we just need the code in our little language. Please enclose
+the program in Markdown code-fence backticks.
