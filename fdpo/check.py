@@ -52,6 +52,9 @@ def check_expr(prog: lang.Program, expr: lang.Expression) -> int:
             raise CheckError(f"unknown variable {expr.var}")
         return port.width
 
+    elif isinstance(expr, lang.Literal):
+        return expr.width
+
     else:
         assert False
 

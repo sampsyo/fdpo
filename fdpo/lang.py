@@ -9,11 +9,17 @@ decls: decl*
 asgts: asgt*
 
 asgt: ident "=" expr ";"
-?expr: ident | call
+?expr: ident | call | lit
 call: ident "[" list{INT} "]" "(" list{expr} ")"
 
 decl: dir WS ident ":" width ";"
 dir: "in" -> in | "out" -> out
+
+# Integer literals.
+lit: dlit | xlit | blit
+dlit: /[0-9]+/ "d" /[0-9]+/
+xlit: /[0-9]+/ "x" /[0-9A-Fa-f]+/
+blit: /[0-9]+/ "b" /[01]+/
 
 ?ident: CNAME
 ?width: INT
@@ -118,7 +124,37 @@ class Lookup:
         return self.var
 
 
-Expression = Call | Lookup
+@dataclass(frozen=True)
+class Literal:
+    width: int
+    base: int  # 2, 10, or 16
+    value: int
+
+    def pretty(self) -> str:
+        match self.base:
+            case 2:
+                base_str = "b"
+                val_str = f"{self.value:b}"
+            case 10:
+                base_str = "d"
+                val_str = f"{self.value:d}"
+            case 16:
+                base_str = "x"
+                val_str = f"{self.value:x}"
+            case _:
+                assert False
+        return f"{self.width}{base_str}{val_str}"
+
+    @classmethod
+    def parse(cls, tree) -> "Literal":
+        width_tree, value_tree = tree.children
+        width = int(width_tree)
+        base = {"blit": 2, "dlit": 10, "xlit": 16}[tree.data]
+        value = int(value_tree, base)
+        return cls(width, base, value)
+
+
+Expression = Call | Lookup | Literal
 
 
 def parse_expr(tree) -> Expression:
@@ -126,6 +162,8 @@ def parse_expr(tree) -> Expression:
         return Lookup(str(tree))
     elif tree.data == "call":
         return Call.parse(tree)
+    elif tree.data == "lit":
+        return Literal.parse(tree.children[0])
     else:
         assert False, "unknown expr type"
 
