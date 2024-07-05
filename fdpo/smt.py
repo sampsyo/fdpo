@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, assert_never
 from . import lang, lib
 from pysmt.shortcuts import (
     Solver,
@@ -32,7 +32,7 @@ def expr_to_smt(env: SymbolEnv, expr: lang.Expression):
     elif isinstance(expr, lang.Literal):
         return BV(expr.value, expr.width)
     else:
-        assert False
+        assert_never(expr)
 
 
 def symbol_env(prog: lang.Program, prefix: str = "") -> SymbolEnv:

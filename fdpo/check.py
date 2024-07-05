@@ -1,4 +1,5 @@
 from . import lang, lib
+from typing import assert_never
 
 
 class CheckError(Exception):
@@ -56,7 +57,7 @@ def check_expr(prog: lang.Program, expr: lang.Expression) -> int:
         return expr.width
 
     else:
-        assert False
+        assert_never(expr)
 
 
 def check_asgt(prog: lang.Program, asgt: lang.Assignment):

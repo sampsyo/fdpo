@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, assert_never
 import lark
 import enum
 from dataclasses import dataclass
@@ -58,7 +58,7 @@ class Direction(enum.Enum):
             case self.OUT:
                 return "out"
             case _:
-                assert False
+                assert_never(self)
 
 
 @dataclass(frozen=True)
