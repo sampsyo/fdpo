@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable
 from pysmt.fnode import FNode
-from pysmt.shortcuts import BVAdd, BVSub, Ite, Equals, BV, BVUGT, BVULT
+from pysmt.shortcuts import BVAdd, BVSub, Ite, NotEquals, BV, BVUGT, BVULT
 
 
 @dataclass(frozen=True)
@@ -32,10 +32,10 @@ FUNCTIONS = {
         Function("add", 1, binary_sig, lambda a: BVAdd(*a)),
         Function("sub", 1, binary_sig, lambda a: BVSub(*a)),
         Function(
-            "mux",
+            "if",
             1,
             lambda p: Signature([1, p[0], p[0]], p[0]),
-            lambda a: Ite(Equals(a[0], BV(0, 1)), a[1], a[2]),
+            lambda a: Ite(NotEquals(a[0], BV(0, 1)), a[1], a[2]),
         ),
         Function(
             "gt", 1, cmp_sig, lambda a: Ite(BVUGT(*a), BV(1, 1), BV(0, 1))
