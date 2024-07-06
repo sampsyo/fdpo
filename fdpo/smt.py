@@ -28,7 +28,7 @@ def expr_to_smt(env: SymbolEnv, expr: lang.Expression):
         return env[expr.var]
     elif isinstance(expr, lang.Call):
         args = [expr_to_smt(env, arg) for arg in expr.inputs]
-        return lib.FUNCTIONS[expr.func].smt(args)
+        return lib.FUNCTIONS[expr.func].smt(expr.params, args)
     elif isinstance(expr, lang.Literal):
         return BV(expr.value, expr.width)
     else:
