@@ -86,12 +86,10 @@ def _tree_list(tree) -> list:
     # list is empty. Maybe this is fixable with a better grammar?
     if isinstance(tree, lark.Tree) and tree.data == "list":
         return tree.children
-    elif isinstance(tree, lark.Token):
-        return [tree]
     elif tree is None:
         return []
     else:
-        assert False
+        return [tree]
 
 
 @dataclass(frozen=True)
