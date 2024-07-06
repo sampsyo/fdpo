@@ -4,6 +4,9 @@ from pysmt.fnode import FNode
 from pysmt.shortcuts import (
     BVAdd,
     BVSub,
+    BVMul,
+    BVUDiv,
+    BVURem,
     Ite,
     NotEquals,
     BV,
@@ -58,6 +61,9 @@ FUNCTIONS = {
     for func in [
         Function("add", 1, binary_sig, lambda _, a: BVAdd(*a)),
         Function("sub", 1, binary_sig, lambda _, a: BVSub(*a)),
+        Function("mul", 1, binary_sig, lambda _, a: BVMul(*a)),
+        Function("div", 1, binary_sig, lambda _, a: BVUDiv(*a)),
+        Function("mod", 1, binary_sig, lambda _, a: BVURem(*a)),
         Function(
             "if",
             1,
