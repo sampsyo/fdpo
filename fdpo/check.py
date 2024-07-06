@@ -1,5 +1,6 @@
 from . import lang, lib
 from typing import assert_never
+from itertools import chain
 
 
 class CheckError(Exception):
@@ -71,6 +72,14 @@ def check_asgt(prog: lang.Program, asgt: lang.Assignment):
 
 
 def check(prog: lang.Program):
+    # Check for duplicate ports.
+    declared = set()
+    for port in chain(prog.inputs.keys(), prog.outputs.keys()):
+        if port in declared:
+            raise CheckError(f"{port} declared multiple times")
+        declared.add(port)
+
+    # Check all assignments.
     assigned = set()
     for asgt in prog.assignments:
         if asgt.dest in assigned:
@@ -78,6 +87,7 @@ def check(prog: lang.Program):
         assigned.add(asgt.dest)
         check_asgt(prog, asgt)
 
+    # Check for unassigned outputs.
     for out in prog.outputs:
         if out not in assigned:
             raise CheckError(f"{out} not assigned")
