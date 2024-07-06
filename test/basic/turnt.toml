@@ -9,6 +9,7 @@ output.out = "-"
 [envs.ask-run]
 command = "fdpo ask-run {args} < {filename}"
 output.out = "-"
+default = false
 
 [envs.smt]
 command = "fdpo smt {args} < {filename}"
