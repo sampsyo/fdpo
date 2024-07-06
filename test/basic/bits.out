@@ -1,3 +1,7 @@
 a = 3
 o = 7
 xo = 4
+left = 6
+right = 1
+logic = 64
+arith = 192
