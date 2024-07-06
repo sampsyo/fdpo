@@ -1,7 +1,21 @@
 from dataclasses import dataclass
 from typing import Callable
 from pysmt.fnode import FNode
-from pysmt.shortcuts import BVAdd, BVSub, Ite, NotEquals, BV, BVUGT, BVULT
+from pysmt.shortcuts import (
+    BVAdd,
+    BVSub,
+    Ite,
+    NotEquals,
+    BV,
+    BVUGT,
+    BVULT,
+    BVLShl,
+    BVLShr,
+    BVAShr,
+    BVAnd,
+    BVOr,
+    BVXor,
+)
 
 
 @dataclass(frozen=True)
@@ -43,5 +57,11 @@ FUNCTIONS = {
         Function(
             "lt", 1, cmp_sig, lambda a: Ite(BVULT(*a), BV(1, 1), BV(0, 1))
         ),
+        Function("shl", 1, binary_sig, lambda a: BVLShl(*a)),
+        Function("shr", 1, binary_sig, lambda a: BVLShr(*a)),
+        Function("ashr", 1, binary_sig, lambda a: BVAShr(*a)),
+        Function("and", 1, binary_sig, lambda a: BVAnd(*a)),
+        Function("or", 1, binary_sig, lambda a: BVOr(*a)),
+        Function("xor", 1, binary_sig, lambda a: BVXor(*a)),
     ]
 }
