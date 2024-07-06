@@ -17,6 +17,7 @@ from pysmt.shortcuts import (
     BVXor,
     BVSExt,
     BVZExt,
+    BVExtract,
 )
 
 
@@ -46,6 +47,12 @@ def ext_sig(params: list[int]) -> Signature:
     return Signature([params[0]], params[1])
 
 
+def slice_sig(params: list[int]) -> Signature:
+    """The signature for slicing/extracting a range of bits."""
+    in_width, lo, hi = params
+    return Signature([in_width], hi - lo + 1)
+
+
 FUNCTIONS = {
     func.name: func
     for func in [
@@ -71,5 +78,8 @@ FUNCTIONS = {
         Function("xor", 1, binary_sig, lambda _, a: BVXor(*a)),
         Function("sext", 2, ext_sig, lambda p, a: BVSExt(a[0], p[1] - p[0])),
         Function("zext", 2, ext_sig, lambda p, a: BVZExt(a[0], p[1] - p[0])),
+        Function(
+            "slice", 3, slice_sig, lambda p, a: BVExtract(a[0], p[1], p[2])
+        ),
     ]
 }
