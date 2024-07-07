@@ -38,7 +38,9 @@ def expr_to_smt(env: SymbolEnv, expr: lang.Expression):
 def symbol_env(prog: lang.Program, prefix: str = "") -> SymbolEnv:
     return {
         port.name: Symbol(f"{prefix}{port.name}", BVType(port.width))
-        for port in chain(prog.inputs.values(), prog.outputs.values())
+        for port in chain(
+            prog.inputs.values(), prog.outputs.values(), prog.temps.values()
+        )
     }
 
 

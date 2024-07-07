@@ -49,10 +49,12 @@ def check_expr(prog: lang.Program, expr: lang.Expression) -> int:
         return sig.output
 
     elif isinstance(expr, lang.Lookup):
-        port = prog.inputs.get(expr.var)
-        if not port:
+        if port := prog.inputs.get(expr.var):
+            return port.width
+        elif port := prog.temps.get(expr.var):
+            return port.width
+        else:
             raise CheckError(f"unknown variable {expr.var}")
-        return port.width
 
     elif isinstance(expr, lang.Literal):
         return expr.width
@@ -63,7 +65,21 @@ def check_expr(prog: lang.Program, expr: lang.Expression) -> int:
 
 def check_asgt(prog: lang.Program, asgt: lang.Assignment):
     expr_width = check_expr(prog, asgt.expr)
-    dest_width = prog.outputs[asgt.dest].width
+
+    if asgt.dest in prog.outputs:
+        # Output.
+        dest_width = prog.outputs[asgt.dest].width
+        if asgt.width is not None and asgt.width != dest_width:
+            raise CheckError(
+                f"width mismatch: {asgt.dest} has width {dest_width}, "
+                f"but assignment specifies width {asgt.width}"
+            )
+    else:
+        # Temporary.
+        if asgt.width is None:
+            raise CheckError(f"{asgt.dest} has no width specified")
+        dest_width = asgt.width
+
     if expr_width != dest_width:
         raise CheckError(
             f"width mismatch: {asgt.dest} has width {dest_width}, "

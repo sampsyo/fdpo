@@ -1,6 +1,7 @@
 from typing import Optional, assert_never
 import lark
 import enum
+import dataclasses
 from dataclasses import dataclass
 
 GRAMMAR = r"""
@@ -8,7 +9,7 @@ prog: decls asgts ["---" asgts]
 decls: decl*
 asgts: asgt*
 
-asgt: ident "=" expr ";"
+asgt: ident [":" width] "=" expr ";"
 ?expr: ident | call | lit
 call: ident "[" list{INT} "]" "(" list{expr} ")"
 
@@ -64,20 +65,21 @@ class Direction(enum.Enum):
 @dataclass(frozen=True)
 class Port:
     name: str
-    direction: Direction
     width: int
 
     @classmethod
-    def parse_decl(cls, tree) -> "Port":
+    def parse_decl(cls, tree) -> tuple["Port", Direction]:
         dir_t, _, name, width = tree.children
-        return cls(
-            str(name),
+        return (
+            cls(
+                str(name),
+                int(width),
+            ),
             Direction.parse(dir_t),
-            int(width),
         )
 
-    def pretty(self) -> str:
-        return f"{self.direction} {self.name}: {self.width};"
+    def pretty(self, direction) -> str:
+        return f"{direction} {self.name}: {self.width};"
 
 
 def _tree_list(tree) -> list:
@@ -169,18 +171,21 @@ def parse_expr(tree) -> Expression:
 @dataclass(frozen=True)
 class Assignment:
     dest: str
+    width: Optional[int]  # For temporaries, not outputs.
     expr: Expression
 
     @classmethod
     def parse(cls, tree) -> "Assignment":
-        lhs, rhs = tree.children
+        lhs, width, rhs = tree.children
         return cls(
             str(lhs),
+            int(width) if width is not None else None,
             parse_expr(rhs),
         )
 
     def pretty(self) -> str:
-        return f"{self.dest} = {self.expr.pretty()};"
+        wann = f": {self.width}" if self.width is not None else ""
+        return f"{self.dest}{wann} = {self.expr.pretty()};"
 
 
 @dataclass(frozen=True)
@@ -188,13 +193,22 @@ class Program:
     inputs: dict[str, Port]
     outputs: dict[str, Port]
     assignments: list[Assignment]
+    temps: dict[str, Port] = dataclasses.field(init=False)
+
+    def __post_init__(self):
+        temps = {
+            a.dest: Port(a.dest, a.width)
+            for a in self.assignments
+            if a.dest not in self.outputs and a.width is not None
+        }
+        object.__setattr__(self, "temps", temps)
 
     @staticmethod
     def parse_decls(tree) -> tuple[dict[str, Port], dict[str, Port]]:
-        ports = [Port.parse_decl(d) for d in tree.children]
+        decls = [Port.parse_decl(d) for d in tree.children]
         return (
-            {p.name: p for p in ports if p.direction == Direction.IN},
-            {p.name: p for p in ports if p.direction == Direction.OUT},
+            {p.name: p for (p, d) in decls if d == Direction.IN},
+            {p.name: p for (p, d) in decls if d == Direction.OUT},
         )
 
     @staticmethod
@@ -214,8 +228,8 @@ class Program:
 
     def pretty(self) -> str:
         return "\n".join(
-            [p.pretty() for p in self.inputs.values()]
-            + [p.pretty() for p in self.outputs.values()]
+            [p.pretty(Direction.IN) for p in self.inputs.values()]
+            + [p.pretty(Direction.OUT) for p in self.outputs.values()]
             + [a.pretty() for a in self.assignments]
         )
 
