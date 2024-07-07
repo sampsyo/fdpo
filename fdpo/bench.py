@@ -4,6 +4,7 @@ import random
 import csv
 import sys
 import os
+import asyncio
 
 
 def gen_inputs(ports: list[lang.Port]) -> Env:
@@ -29,7 +30,10 @@ async def bench_run_one(filename: str, asker: ask.Asker) -> bool:
 async def bench_run(filenames: list[str], asker: ask.Asker):
     writer = csv.writer(sys.stdout)
     writer.writerow(["prog", "success"])
-    for filename in filenames:
+    tasks = {
+        filename: bench_run_one(filename, asker) for filename in filenames
+    }
+    for filename, task in tasks.items():
+        success = await task
         name, _ = os.path.splitext(os.path.basename(filename))
-        success = await bench_run_one(filename, asker)
         writer.writerow([name, "1" if success else "0"])
