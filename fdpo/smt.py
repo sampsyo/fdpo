@@ -1,5 +1,6 @@
 from typing import Optional, assert_never
 from . import lang, lib
+from .util import Env
 from pysmt.shortcuts import (
     Solver,
     Symbol,
@@ -14,13 +15,13 @@ from pysmt.shortcuts import (
 )
 from pysmt.typing import BVType
 from pysmt.fnode import FNode
+from pysmt.environment import Environment
 from pysmt import logics
 from itertools import chain
 import shutil
 from dataclasses import dataclass
 
 SymbolEnv = dict[str, FNode]
-Env = dict[str, int]
 
 
 def expr_to_smt(env: SymbolEnv, expr: lang.Expression):
@@ -106,14 +107,17 @@ def solve(phi: FNode) -> Optional[Env]:
 
 
 def run(prog: lang.Program, env: Env) -> Env:
-    symb_env, prog_f = prog_formula(prog)
-    env_constraints = [
-        Equals(symb_env[var], BV(value, prog.inputs[var].width))
-        for var, value in env.items()
-    ]
-    phi = And(prog_f, *env_constraints)
+    # Annoyingly, pysmt uses global state to hold information about all the symbols
+    # and formulas we create. We encapsulate this state for the duration of the call.
+    with Environment():
+        symb_env, prog_f = prog_formula(prog)
+        env_constraints = [
+            Equals(symb_env[var], BV(value, prog.inputs[var].width))
+            for var, value in env.items()
+        ]
+        phi = And(prog_f, *env_constraints)
 
-    model = solve(phi)
+        model = solve(phi)
     assert model, "unsat"
     return {k: v for k, v in model.items() if k in prog.outputs}
 

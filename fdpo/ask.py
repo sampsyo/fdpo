@@ -3,6 +3,7 @@ from ollama import AsyncClient
 import tomllib
 import jinja2
 from . import lang, smt
+from .util import Env
 import re
 import logging
 import sys
@@ -55,18 +56,16 @@ class Asker:
         LOG.debug("Response finished with %s parts.", len(out))
         return "".join(out)
 
-    def run(
-        self, prog: lang.Program, inputs: dict[str, int]
-    ) -> dict[str, int]:
+    async def run(self, prog: lang.Program, inputs: Env) -> Env:
         input_str = "\n".join(f"{k} = {v}" for k, v in inputs.items())
         prompt = self.prompt("run.md", prog=prog.pretty(), invals=input_str)
-        res = asyncio.run(self.interact(prompt))
+        res = await self.interact(prompt)
         return parse_env(res)
 
-    def opt(self, prog: lang.Program) -> lang.Program:
+    async def opt(self, prog: lang.Program) -> lang.Program:
         # Ask for an optimized program.
         prompt = self.prompt("opt.md", prog=prog.pretty())
-        code = extract_code(asyncio.run(self.interact(prompt)))
+        code = extract_code(await self.interact(prompt))
         assert code  # TODO: Send feedback and ask again.
         new_prog = lang.parse_body(code, prog)  # TODO: Catch syntax errors.
 

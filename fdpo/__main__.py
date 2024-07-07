@@ -1,25 +1,19 @@
-from .lang import parse
+from .lang import parse, Program
 from .check import check, CheckError
 from .smt import prog_formula, equiv_formula, run, equiv
 from .ask import Asker
+from .util import parse_env, print_env
+from .bench import bench_run
 from pysmt.shortcuts import to_smtlib
 import sys
 import tomllib
 import os
 import logging
 import lark
+from typing import Optional
+import asyncio
 
 LOG = logging.getLogger("fdpo")
-
-
-def parse_inputs(args: list[str]) -> dict[str, int]:
-    """Parse a list of arguments like a=5 b=42."""
-    return {key: int(value) for key, value in (arg.split("=") for arg in args)}
-
-
-def print_env(env: dict[str, int]) -> None:
-    for key, value in env.items():
-        print(f"{key} = {value}")
 
 
 def load_config() -> dict:
@@ -31,14 +25,7 @@ def load_config() -> dict:
         return {}
 
 
-def main():
-    config = load_config()
-    LOG.addHandler(logging.StreamHandler())
-    if config.get("verbose"):
-        LOG.setLevel(logging.DEBUG)
-    else:
-        LOG.setLevel(logging.INFO)
-
+def read_progs() -> tuple[Program, Optional[Program]]:
     src = sys.stdin.read()
     try:
         prog1, prog2 = parse(src)
@@ -54,21 +41,37 @@ def main():
         print(f"error: {e.message}", file=sys.stderr)
         sys.exit(1)
 
+    return prog1, prog2
+
+
+def main():
+    config = load_config()
+    LOG.addHandler(logging.StreamHandler())
+    if config.get("verbose"):
+        LOG.setLevel(logging.DEBUG)
+    else:
+        LOG.setLevel(logging.INFO)
+
     mode = sys.argv[1] if len(sys.argv) > 1 else "print"
     match mode:
         case "print":
-            print(prog1.pretty())
+            prog, _ = read_progs()
+            print(prog.pretty())
         case "smt":
-            _, phi = prog_formula(prog1)
+            prog, _ = read_progs()
+            _, phi = prog_formula(prog)
             print(to_smtlib(phi))
         case "equiv-smt":
+            prog1, prog2 = read_progs()
             assert prog2
             phi = equiv_formula(prog1, prog2)
             print(to_smtlib(phi))
         case "run":
-            inputs = parse_inputs(sys.argv[2:])
-            print_env(run(prog1, inputs))
+            prog, _ = read_progs()
+            inputs = parse_env(sys.argv[2:])
+            print_env(run(prog, inputs))
         case "equiv":
+            prog1, prog2 = read_progs()
             assert prog2
             ce = equiv(prog1, prog2)
             if ce:
@@ -77,10 +80,15 @@ def main():
             else:
                 print("equivalent")
         case "ask-run":
-            inputs = parse_inputs(sys.argv[2:])
-            print_env(Asker(config).run(prog1, inputs))
+            prog, _ = read_progs()
+            inputs = parse_env(sys.argv[2:])
+            print_env(asyncio.run(Asker(config).run(prog, inputs)))
         case "ask-opt":
-            Asker(config).opt(prog1)
+            prog, _ = read_progs()
+            asyncio.run(Asker(config).opt(prog))
+        case "bench":
+            filenames = sys.argv[2:]
+            asyncio.run(bench_run(filenames, Asker(config)))
         case _:
             print(f"error: unknown mode {mode}", file=sys.stderr)
             sys.exit(1)
