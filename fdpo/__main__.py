@@ -88,7 +88,8 @@ def main():
             asyncio.run(Asker(config).opt(prog))
         case "bench":
             filenames = sys.argv[2:]
-            asyncio.run(bench_run(filenames, Asker(config)))
+            count = config["bench"]["count"]
+            asyncio.run(bench_run(filenames, Asker(config), count))
         case _:
             print(f"error: unknown mode {mode}", file=sys.stderr)
             sys.exit(1)
