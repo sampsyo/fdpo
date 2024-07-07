@@ -49,9 +49,8 @@ def check_expr(prog: lang.Program, expr: lang.Expression) -> int:
         return sig.output
 
     elif isinstance(expr, lang.Lookup):
-        if port := prog.inputs.get(expr.var):
-            return port.width
-        elif port := prog.temps.get(expr.var):
+        all_ports = prog.inputs | prog.outputs | prog.temps
+        if port := all_ports.get(expr.var):
             return port.width
         else:
             raise CheckError(f"unknown variable {expr.var}")
