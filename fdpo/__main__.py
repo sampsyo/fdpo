@@ -7,6 +7,7 @@ import sys
 import tomllib
 import os
 import logging
+import lark
 
 LOG = logging.getLogger("fdpo")
 
@@ -39,7 +40,11 @@ def main():
         LOG.setLevel(logging.INFO)
 
     src = sys.stdin.read()
-    prog1, prog2 = parse(src)
+    try:
+        prog1, prog2 = parse(src)
+    except lark.UnexpectedInput as exc:
+        print(f"syntax error: {exc}", file=sys.stderr)
+        sys.exit(1)
 
     try:
         check(prog1)

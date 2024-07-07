@@ -1,0 +1,8 @@
+syntax error: No terminal matches 'y' in the current parser context, at line 3 col 7
+
+x = x y z;
+      ^
+Expected one of: 
+	* LSQB
+	* SEMICOLON
+
