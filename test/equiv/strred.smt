@@ -1,0 +1,1 @@
+(let ((.def_0 (= prog1_y prog2_y))) (let ((.def_1 (not .def_0))) (let ((.def_2 (= prog1_x prog2_x))) (let ((.def_3 (bvadd prog2_x prog2_x))) (let ((.def_4 (= prog2_y .def_3))) (let ((.def_5 (bvmul prog1_x #b0000000000000010))) (let ((.def_6 (= prog1_y .def_5))) (let ((.def_7 (and .def_6 .def_4 .def_2 .def_1))) .def_7))))))))
