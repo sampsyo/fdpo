@@ -30,9 +30,11 @@ bit width, `d` is the base (decimal), and `1` is the value. The language
 supports binary (`d`), decimal (`d`), and hexadecimal (`x`) literals. So, for
 example, `32x1B` is the 32-bit value 27.
 
-The language does not have infix operators like `+`. The only thing you can
-do in expressions is call functions, like `add[4]`. Functions like this are
-parameterized by the bit widths they operate on, written in square brackets.
-Here is the complete list of functions available:
+The language does not have infix operators like `+`. It does not have
+subscripting notation like `x[5]`. The only thing you can do in expressions is
+call functions, like `add[4](x, y)` or `slice[16, 1, 2](y)`. Functions like
+this are parameterized by integer values that control the bit widths and
+indices they operate on, the bit widths they operate on, written in square
+brackets. Here is the complete list of functions available:
 
 {{lib_help}}
