@@ -42,18 +42,26 @@ class EvalCommand:
 Command = CheckCommand | EvalCommand
 
 
+class CommandError(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
 def parse_command(s: str) -> Command:
     """Parse an agent command."""
-    cmd, prog = s.strip().split("\n", 1)
+    try:
+        cmd, prog = s.strip().split("\n", 1)
+    except ValueError:
+        raise CommandError("missing program")
     prog, _ = lang.parse(prog)
     opcode, *args = cmd.split()
     match opcode:
         case "check":
             return CheckCommand(prog)
-        case "run":
+        case "eval":
             return EvalCommand(parse_env(args), prog)
         case _:
-            assert False, "TODO: report unknown command"
+            raise CommandError(f"unknown command: {opcode}")
 
 
 class Chat:
@@ -128,10 +136,26 @@ class Asker:
         # Ask for a command.
         prompt = self.prompt("opt.md", prog=prog.pretty())
         code = extract_code(await chat.send(prompt))
-        assert code  # TODO: Send feedback and ask again.
+        if not code:
+            code = extract_code(
+                await chat.send(
+                    self.prompt(
+                        "malformed_command.md", error="no fenced command found"
+                    )
+                )
+            )
+            assert code, "two strikes"
 
         # Process the agent's command.
-        cmd = parse_command(code)
+        try:
+            cmd = parse_command(code)
+        except CommandError as e:
+            code = await chat.send(
+                self.prompt("malformed_command.md", error=str(e))
+            )
+            assert code  # TODO retry here too??
+            cmd = parse_command(code)  # TODO: catch the error
+
         match cmd:
             case CheckCommand(new_prog):
                 print("CHECK")
