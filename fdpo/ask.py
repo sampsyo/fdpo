@@ -176,6 +176,9 @@ class OptChat(Chat):
                 "missing_input.md", inputs=", ".join(cmd.prog.inputs)
             )
 
+        # Silently ignore extra inputs.
+        env = {k: v for k, v in cmd.env.items() if k in self.prog.inputs}
+
         # Check that the program is well-formed.
         if err := self.well_formed(cmd.prog):
             return err
