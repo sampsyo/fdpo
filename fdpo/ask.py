@@ -30,6 +30,10 @@ def extract_code(s: str) -> Optional[str]:
         return None
 
 
+def same_sig(prog1: lang.Program, prog2: lang.Program) -> bool:
+    return prog1.inputs == prog2.inputs and prog1.outputs == prog2.outputs
+
+
 @dataclass
 class CheckCommand:
     prog: lang.Program
@@ -121,6 +125,12 @@ class OptChat(Chat):
         Return a message if the programs are not equivalent, or None (indicating the
         interaction is done) if they are.
         """
+        # Check that the two programs have the same input/output ports.
+        if not same_sig(self.prog, cmd.prog):
+            return self.asker.prompt(
+                "signature_mismatch.md", sig=self.prog.pretty_sig()
+            )
+
         # Check equivalence.
         ce = smt.equiv(self.prog, cmd.prog)
         if ce:
@@ -130,6 +140,13 @@ class OptChat(Chat):
 
     def eval(self, cmd: EvalCommand) -> str:
         """Perform an `eval` command for the agent."""
+        # Check that the provided inputs match the input ports.
+        if not all(name in self.prog.inputs for name in cmd.env):
+            return self.asker.prompt(
+                "missing_input.md", inputs=", ".join(self.prog.inputs)
+            )
+
+        # Run the program.
         res = smt.run(cmd.prog, cmd.env)
         return self.asker.prompt("eval.md", env=env_str(res))
 

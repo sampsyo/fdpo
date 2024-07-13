@@ -226,11 +226,15 @@ class Program:
             cls(inputs, outputs, cls.parse_asgts(asgts2)) if asgts2 else None,
         )
 
-    def pretty(self) -> str:
+    def pretty_sig(self) -> str:
         return "\n".join(
             [p.pretty(Direction.IN) for p in self.inputs.values()]
             + [p.pretty(Direction.OUT) for p in self.outputs.values()]
-            + [a.pretty() for a in self.assignments]
+        )
+
+    def pretty(self) -> str:
+        return "\n".join(
+            [self.pretty_sig()] + [a.pretty() for a in self.assignments]
         )
 
 
