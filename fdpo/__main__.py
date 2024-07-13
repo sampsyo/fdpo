@@ -1,7 +1,7 @@
 from .lang import parse, Program
 from .check import check, CheckError
 from .smt import prog_formula, equiv_formula, run, equiv
-from .ask import Asker
+from .ask import AskError, Asker
 from .util import parse_env, env_str
 from .bench import bench_run
 from . import lib
@@ -86,7 +86,11 @@ def main():
             print(env_str(asyncio.run(Asker(config).run(prog, inputs))))
         case "ask-opt":
             prog, _ = read_progs()
-            asyncio.run(Asker(config).opt(prog))
+            try:
+                asyncio.run(Asker(config).opt(prog))
+            except AskError as e:
+                print(e, file=sys.stderr)
+                sys.exit(1)
         case "bench":
             filenames = sys.argv[2:]
             count = config["bench"]["count"]

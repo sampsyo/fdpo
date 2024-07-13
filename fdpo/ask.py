@@ -13,7 +13,7 @@ import lark
 
 LOG = logging.getLogger("fdpo")
 MAX_ERRORS = 5
-MAX_ROUNDS = 10
+MAX_ROUNDS = 20
 OPS = ["check", "eval"]
 
 
@@ -36,6 +36,10 @@ def same_sig(prog1: lang.Program, prog2: lang.Program) -> bool:
     return prog1.inputs == prog2.inputs and prog1.outputs == prog2.outputs
 
 
+class AskError(Exception):
+    pass
+
+
 @dataclass
 class CheckCommand:
     prog: lang.Program
@@ -51,8 +55,7 @@ Command = CheckCommand | EvalCommand
 
 
 class CommandError(Exception):
-    def __init__(self, message: str):
-        super().__init__(message)
+    pass
 
 
 def parse_command(s: str) -> Command:
@@ -118,7 +121,8 @@ class OptChat(Chat):
             return parse_command(resp)
         except CommandError as e:
             self.errors += 1
-            assert self.errors < MAX_ERRORS  # TODO handle gracefully
+            if self.errors >= MAX_ERRORS:
+                raise AskError(f"exceeded {MAX_ERRORS} interaction errors")
             err_prompt = self.asker.prompt(
                 "malformed_command.md", error=str(e)
             )
@@ -192,7 +196,7 @@ class OptChat(Chat):
             prompt = self.asker.prompt("next_command.md", ops=OPS)
             cmd = await self.get_command(f"{resp}\n\n{prompt}")
 
-        assert False
+        raise AskError(f"exceeded {MAX_ROUNDS} interaction rounds")
 
 
 class Asker:
