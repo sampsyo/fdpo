@@ -173,15 +173,15 @@ class OptChat(Chat):
                 "missing_input.md", inputs=", ".join(cmd.prog.inputs)
             )
 
-        # Silently ignore extra inputs.
-        env = {k: v for k, v in cmd.env.items() if k in self.prog.inputs}
-
         # Check that the program is well-formed.
         if err := self.well_formed(cmd.prog):
             return err
 
+        # Silently ignore extra inputs.
+        env = {k: v for k, v in cmd.env.items() if k in self.prog.inputs}
+
         # Run the program.
-        res = smt.run(cmd.prog, cmd.env)
+        res = smt.run(cmd.prog, env)
         return self.asker.prompt("eval.md", env=env_str(res))
 
     async def run(self) -> lang.Program:
