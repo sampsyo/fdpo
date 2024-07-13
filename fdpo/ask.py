@@ -119,20 +119,17 @@ class OptChat(Chat):
     def __init__(self, asker: "Asker", prog: lang.Program):
         super().__init__(asker)
         self.prog = prog
-        self.errors = 0
 
     async def get_command(self, prompt: str) -> Command:
         resp = await self.send(prompt)
-        try:
-            return parse_resp_command(resp)
-        except CommandError as e:
-            self.errors += 1
-            if self.errors >= MAX_ERRORS:
-                raise AskError(f"exceeded {MAX_ERRORS} interaction errors")
-            err_prompt = self.asker.prompt(
-                "malformed_command.md", error=str(e)
-            )
-            return await self.get_command(err_prompt)
+        for _ in range(MAX_ERRORS):
+            try:
+                return parse_resp_command(resp)
+            except CommandError as e:
+                resp = await self.send(
+                    self.asker.prompt("malformed_command.md", error=str(e))
+                )
+        raise AskError(f"exceeded {MAX_ERRORS} interaction errors")
 
     def well_formed(self, prog: lang.Program) -> Optional[str]:
         try:
