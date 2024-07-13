@@ -13,6 +13,7 @@ from dataclasses import dataclass
 LOG = logging.getLogger("fdpo")
 MAX_ERRORS = 5
 MAX_ROUNDS = 10
+OPS = ["check", "eval"]
 
 
 def parse_env_lines(s: str) -> dict[str, int]:
@@ -131,6 +132,10 @@ class OptChat(Chat):
                 "signature_mismatch.md", sig=self.prog.pretty_sig()
             )
 
+        # Check for an identical program.
+        if self.prog == cmd.prog:
+            return self.asker.prompt("identical.md")
+
         # Check equivalence.
         ce = smt.equiv(self.prog, cmd.prog)
         if ce:
@@ -141,9 +146,9 @@ class OptChat(Chat):
     def eval(self, cmd: EvalCommand) -> str:
         """Perform an `eval` command for the agent."""
         # Check that the provided inputs match the input ports.
-        if not all(name in self.prog.inputs for name in cmd.env):
+        if not all(name in cmd.prog.inputs for name in cmd.env):
             return self.asker.prompt(
-                "missing_input.md", inputs=", ".join(self.prog.inputs)
+                "missing_input.md", inputs=", ".join(cmd.prog.inputs)
             )
 
         # Run the program.
@@ -164,7 +169,9 @@ class OptChat(Chat):
                     resp = self.eval(cmd)
                 case _:
                     assert_never(cmd)
-            cmd = await self.get_command(resp)
+
+            prompt = self.asker.prompt("next_command.md", ops=OPS)
+            cmd = await self.get_command(f"{resp}\n\n{prompt}")
 
         assert False
 

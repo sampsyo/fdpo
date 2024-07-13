@@ -7,10 +7,11 @@ The first line is operation to perform, and the remaining lines are a program.
 For example, use this:
 
 ```
-check
+eval foo=2
 in foo: 4;
 out bar: 4;
-bar = shr[4](4, 4d1);
+bar = shr[4](foo, 4d1);
 ```
 
-to check whether that short program is equivalent to our original program.
+to run the above program with the input value 2. Remember to surround the
+command in ```triple backticks```.
