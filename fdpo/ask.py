@@ -3,16 +3,17 @@ from ollama import AsyncClient
 import tomllib
 import jinja2
 from . import lang, smt, lib
-from .util import Env
+from .util import Env, parse_env
 import re
 import logging
 import sys
 from typing import Optional
+from dataclasses import dataclass
 
 LOG = logging.getLogger("fdpo")
 
 
-def parse_env(s: str) -> dict[str, int]:
+def parse_env_lines(s: str) -> dict[str, int]:
     return {
         name: int(val) for name, val in re.findall(r"^(\w+) = (\d+)$", s, re.M)
     }
@@ -25,6 +26,34 @@ def extract_code(s: str) -> Optional[str]:
         return parts[1]
     else:
         return None
+
+
+@dataclass
+class CheckCommand:
+    prog: lang.Program
+
+
+@dataclass
+class EvalCommand:
+    env: Env
+    prog: lang.Program
+
+
+Command = CheckCommand | EvalCommand
+
+
+def parse_command(s: str) -> Command:
+    """Parse an agent command."""
+    cmd, prog = s.strip().split("\n", 1)
+    prog, _ = lang.parse(prog)
+    opcode, *args = cmd.split()
+    match opcode:
+        case "check":
+            return CheckCommand(prog)
+        case "run":
+            return EvalCommand(parse_env(args), prog)
+        case _:
+            assert False, "TODO: report unknown command"
 
 
 class Asker:
@@ -63,20 +92,29 @@ class Asker:
         input_str = "\n".join(f"{k} = {v}" for k, v in inputs.items())
         prompt = self.prompt("run.md", prog=prog.pretty(), invals=input_str)
         res = await self.interact(prompt)
-        return parse_env(res)
+        return parse_env_lines(res)
 
     async def opt(self, prog: lang.Program) -> lang.Program:
-        # Ask for an optimized program.
+        # Ask for a command.
         prompt = self.prompt("opt.md", prog=prog.pretty())
         code = extract_code(await self.interact(prompt))
         assert code  # TODO: Send feedback and ask again.
-        new_prog = lang.parse_body(code, prog)  # TODO: Catch syntax errors.
 
-        # Check equivalence.
-        ce = smt.equiv(prog, new_prog)
-        if ce:
-            # TODO: Send counter-example as feedback.
-            ce.print()
-            assert False
+        # Process the agent's command.
+        cmd = parse_command(code)
+        match cmd:
+            case CheckCommand(new_prog):
+                print("CHECK")
+                # Check equivalence.
+                ce = smt.equiv(prog, new_prog)
+                if ce:
+                    # TODO: Send counter-example as feedback.
+                    ce.print()
+                    assert False
+                else:
+                    print("EQUIV")
+                    return new_prog
+            case EvalCommand(env, new_prog):
+                print("EVAL")
 
         return new_prog
