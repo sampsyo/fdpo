@@ -4,6 +4,7 @@ from .smt import prog_formula, equiv_formula, run, equiv
 from .ask import Asker
 from .util import parse_env, print_env
 from .bench import bench_run
+from . import lib
 from pysmt.shortcuts import to_smtlib
 import sys
 import tomllib
@@ -90,6 +91,8 @@ def main():
             filenames = sys.argv[2:]
             count = config["bench"]["count"]
             asyncio.run(bench_run(filenames, Asker(config), count))
+        case "lib-help":
+            print("\n".join(f.help for f in lib.FUNCTIONS.values()))
         case _:
             print(f"error: unknown mode {mode}", file=sys.stderr)
             sys.exit(1)
