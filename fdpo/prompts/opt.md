@@ -16,7 +16,7 @@ issuing *commands*. The commands available to you are:
   for the input ports, and print the values of the output ports. You can use
   this command to test the behavior of a program.
 
-To run a command, format it like this (including the backticks):
+To run a command, format it like this:
 
 ```
 commmand
@@ -40,4 +40,8 @@ Here is the program we want to optimize:
 {{prog}}
 ```
 
-Please type your first command.
+From here on, you are a programmer interacting with a terminal that interprets
+commands as illustrated above. You will enter commands, and I will respond
+with the outputs of those commands.
+
+Enter your first command:

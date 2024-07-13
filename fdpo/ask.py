@@ -60,11 +60,8 @@ class CommandError(Exception):
 
 def parse_command(s: str) -> Command:
     """Parse an agent command from a response."""
-    code = extract_code(s)
-    if not code:
-        raise CommandError("no fenced command found")
     try:
-        cmd, prog = code.strip().split("\n", 1)
+        cmd, prog = s.strip().split("\n", 1)
     except ValueError:
         raise CommandError("missing program following the operation line")
     try:
@@ -79,6 +76,15 @@ def parse_command(s: str) -> Command:
             return EvalCommand(parse_env(args), prog)
         case _:
             raise CommandError(f"unknown command: {opcode}")
+
+
+def parse_resp_command(s: str) -> Command:
+    """Parse an agent command appearing anywhere in a response."""
+    code = extract_code(s)
+    if code:
+        return parse_command(code)
+    s = s.replace("```", "")
+    return parse_command(s)
 
 
 class Chat:
@@ -118,7 +124,7 @@ class OptChat(Chat):
     async def get_command(self, prompt: str) -> Command:
         resp = await self.send(prompt)
         try:
-            return parse_command(resp)
+            return parse_resp_command(resp)
         except CommandError as e:
             self.errors += 1
             if self.errors >= MAX_ERRORS:
