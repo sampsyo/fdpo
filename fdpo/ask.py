@@ -64,16 +64,26 @@ def parse_command(s: str) -> Command:
         cmd, prog = s.strip().split("\n", 1)
     except ValueError:
         raise CommandError("missing program following the operation line")
+
+    # Tolerate a trailing semicolon on the command.
+    if cmd.endswith(";"):
+        cmd = cmd[:-1]
+
     try:
         prog, _ = lang.parse(prog)
     except lark.UnexpectedInput as exc:
         raise CommandError(f"syntax error: {exc}")
+
     opcode, *args = cmd.split()
     match opcode:
         case "check":
             return CheckCommand(prog)
         case "eval":
-            return EvalCommand(parse_env(args), prog)
+            try:
+                env = parse_env(args)
+            except ValueError as exc:
+                raise CommandError(f"invalid evaluation value: {exc}")
+            return EvalCommand(env, prog)
         case _:
             raise CommandError(f"unknown command: {opcode}")
 
