@@ -7,11 +7,12 @@ from .util import Env, parse_env
 import re
 import logging
 import sys
-from typing import Optional
+from typing import Optional, assert_never
 from dataclasses import dataclass
 
 LOG = logging.getLogger("fdpo")
 MAX_ERRORS = 5
+MAX_ROUNDS = 10
 
 
 def parse_env_lines(s: str) -> dict[str, int]:
@@ -114,26 +115,41 @@ class OptChat(Chat):
             )
             return await self.get_command(err_prompt)
 
+    def check(self, cmd: CheckCommand) -> Optional[str]:
+        """Perform a `check` command for the agent.
+
+        Return a message if the programs are not equivalent, or None (indicating the
+        interaction is done) if they are.
+        """
+        # Check equivalence.
+        ce = smt.equiv(self.prog, cmd.prog)
+        if ce:
+            return self.asker.prompt("counterexample.md", ce=str(ce))
+        else:
+            return None
+
+    def eval(self, cmd: EvalCommand) -> str:
+        """Perform an `eval` command for the agent."""
+        print("EVAL")
+        return "TK EVAL"
+
     async def run(self) -> lang.Program:
         prompt = self.asker.prompt("opt.md", prog=self.prog.pretty())
         cmd = await self.get_command(prompt)
 
-        match cmd:
-            case CheckCommand(new_prog):
-                print("CHECK")
-                # Check equivalence.
-                ce = smt.equiv(self.prog, new_prog)
-                if ce:
-                    # TODO: Send counter-example as feedback.
-                    ce.print()
-                    assert False
-                else:
-                    print("EQUIV")
-                    return new_prog
-            case EvalCommand(env, new_prog):
-                print("EVAL")
+        for _ in range(MAX_ROUNDS):
+            match cmd:
+                case CheckCommand(_):
+                    resp = self.check(cmd)
+                    if resp is None:
+                        return cmd.prog
+                case EvalCommand(_, _):
+                    resp = self.eval(cmd)
+                case _:
+                    assert_never(cmd)
+            cmd = await self.get_command(resp)
 
-        return new_prog
+        assert False
 
 
 class Asker:

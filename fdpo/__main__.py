@@ -77,7 +77,7 @@ def main():
             ce = equiv(prog1, prog2)
             if ce:
                 print("not equivalent")
-                ce.print()
+                print(ce)
             else:
                 print("equivalent")
         case "ask-run":

@@ -127,13 +127,15 @@ class Counterexample:
     inputs: Env
     differing_outputs: dict[str, tuple[int, int]]
 
-    def print(self):
-        print("inputs:")
+    def __str__(self):
+        out = []
+        out.append("inputs:")
         for key, value in self.inputs.items():
-            print(f"  {key} = {value}")
-        print("differing outputs:")
+            out.append(f"  {key} = {value}")
+        out.append("differing outputs:")
         for key, (value1, value2) in self.differing_outputs.items():
-            print(f"  {key} = {value1} vs. {value2}")
+            out.append(f"  {key} = {value1} vs. {value2}")
+        return "\n".join(out)
 
 
 def equiv(
