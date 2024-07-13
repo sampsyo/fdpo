@@ -2,7 +2,7 @@ import asyncio
 from ollama import AsyncClient
 import tomllib
 import jinja2
-from . import lang, smt
+from . import lang, smt, lib
 from .util import Env
 import re
 import logging
@@ -37,6 +37,9 @@ class Asker:
 
     def prompt(self, filename: str, **kwargs) -> str:
         template = self.jinja.get_template(filename)
+        kwargs["lib_help"] = "\n".join(
+            f"* {f.help}" for f in lib.FUNCTIONS.values()
+        )
         return template.render(**kwargs)
 
     async def interact(self, prompt: str):

@@ -33,3 +33,6 @@ example, `32x1B` is the 32-bit value 27.
 The language does not have infix operators like `+`. The only thing you can
 do in expressions is call functions, like `add[4]`. Functions like this are
 parameterized by the bit widths they operate on, written in square brackets.
+Here is the complete list of functions available:
+
+{{lib_help}}
