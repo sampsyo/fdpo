@@ -56,6 +56,34 @@ def parse_command(s: str) -> Command:
             assert False, "TODO: report unknown command"
 
 
+class Chat:
+    def __init__(self, asker: "Asker"):
+        self.asker = asker
+        self.history = []
+
+    async def send(self, message: str) -> str:
+        LOG.debug(
+            "Sending message (hist. %i):\n%s", len(self.history), message
+        )
+        self.history.append({"role": "user", "content": message})
+        resp = await self.asker.client.chat(
+            model=self.asker.model, messages=self.history, stream=True
+        )
+        out = []
+        LOG.debug("Receiving response.")
+        async for part in resp:  # type: ignore
+            text = part["message"]["content"]
+            if LOG.level <= logging.DEBUG:
+                print(text, end="", file=sys.stderr, flush=True)
+            out.append(text)
+        if LOG.level <= logging.DEBUG:
+            print(file=sys.stderr, flush=True)
+        LOG.debug("Response finished with %s parts.", len(out))
+        out_s = "".join(out)
+        self.history.append({"role": "assistant", "content": out_s})
+        return out_s
+
+
 class Asker:
     def __init__(self, config: dict):
         self.client = AsyncClient(host=config["host"])
@@ -95,9 +123,11 @@ class Asker:
         return parse_env_lines(res)
 
     async def opt(self, prog: lang.Program) -> lang.Program:
+        chat = Chat(self)
+
         # Ask for a command.
         prompt = self.prompt("opt.md", prog=prog.pretty())
-        code = extract_code(await self.interact(prompt))
+        code = extract_code(await chat.send(prompt))
         assert code  # TODO: Send feedback and ask again.
 
         # Process the agent's command.
