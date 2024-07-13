@@ -15,3 +15,5 @@ bar = shr[4](foo, 4d1);
 
 to run the above program with the input value 2. Remember to surround the
 command in ```triple backticks```.
+
+Try entering a new command.

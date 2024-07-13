@@ -2,7 +2,7 @@ import asyncio
 from ollama import AsyncClient
 import tomllib
 import jinja2
-from . import lang, smt, lib
+from . import lang, smt, lib, check
 from .util import Env, parse_env, env_str
 import re
 import logging
@@ -120,6 +120,13 @@ class OptChat(Chat):
             )
             return await self.get_command(err_prompt)
 
+    def well_formed(self, prog: lang.Program) -> Optional[str]:
+        try:
+            check.check(prog)
+        except check.CheckError as e:
+            return self.asker.prompt("illformed.md", error=str(e))
+        return None
+
     def check(self, cmd: CheckCommand) -> Optional[str]:
         """Perform a `check` command for the agent.
 
@@ -131,6 +138,10 @@ class OptChat(Chat):
             return self.asker.prompt(
                 "signature_mismatch.md", sig=self.prog.pretty_sig()
             )
+
+        # Check that the program is well-formed.
+        if err := self.well_formed(cmd.prog):
+            return err
 
         # Check for an identical program.
         if self.prog == cmd.prog:
@@ -146,10 +157,14 @@ class OptChat(Chat):
     def eval(self, cmd: EvalCommand) -> str:
         """Perform an `eval` command for the agent."""
         # Check that the provided inputs match the input ports.
-        if not all(name in cmd.prog.inputs for name in cmd.env):
+        if not all(name in cmd.env for name in self.prog.inputs):
             return self.asker.prompt(
                 "missing_input.md", inputs=", ".join(cmd.prog.inputs)
             )
+
+        # Check that the program is well-formed.
+        if err := self.well_formed(cmd.prog):
+            return err
 
         # Run the program.
         res = smt.run(cmd.prog, cmd.env)

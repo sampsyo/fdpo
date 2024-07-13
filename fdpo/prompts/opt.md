@@ -40,6 +40,4 @@ Here is the program we want to optimize:
 {{prog}}
 ```
 
-Please type your first command. Do not include any other code; just write the
-command (`check` or `eval`) you want to run and the program you want to run it
-on.
+Please type your first command.
