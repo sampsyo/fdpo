@@ -11,6 +11,7 @@ from typing import Optional
 from dataclasses import dataclass
 
 LOG = logging.getLogger("fdpo")
+MAX_ERRORS = 5
 
 
 def parse_env_lines(s: str) -> dict[str, int]:
@@ -48,11 +49,14 @@ class CommandError(Exception):
 
 
 def parse_command(s: str) -> Command:
-    """Parse an agent command."""
+    """Parse an agent command from a response."""
+    code = extract_code(s)
+    if not code:
+        raise CommandError("no fenced command found")
     try:
-        cmd, prog = s.strip().split("\n", 1)
+        cmd, prog = code.strip().split("\n", 1)
     except ValueError:
-        raise CommandError("missing program")
+        raise CommandError("missing program following the operation line")
     prog, _ = lang.parse(prog)
     opcode, *args = cmd.split()
     match opcode:
@@ -90,6 +94,46 @@ class Chat:
         out_s = "".join(out)
         self.history.append({"role": "assistant", "content": out_s})
         return out_s
+
+
+class OptChat(Chat):
+    def __init__(self, asker: "Asker", prog: lang.Program):
+        super().__init__(asker)
+        self.prog = prog
+        self.errors = 0
+
+    async def get_command(self, prompt: str) -> Command:
+        resp = await self.send(prompt)
+        try:
+            return parse_command(resp)
+        except CommandError as e:
+            self.errors += 1
+            assert self.errors < MAX_ERRORS  # TODO handle gracefully
+            err_prompt = self.asker.prompt(
+                "malformed_command.md", error=str(e)
+            )
+            return await self.get_command(err_prompt)
+
+    async def run(self) -> lang.Program:
+        prompt = self.asker.prompt("opt.md", prog=self.prog.pretty())
+        cmd = await self.get_command(prompt)
+
+        match cmd:
+            case CheckCommand(new_prog):
+                print("CHECK")
+                # Check equivalence.
+                ce = smt.equiv(self.prog, new_prog)
+                if ce:
+                    # TODO: Send counter-example as feedback.
+                    ce.print()
+                    assert False
+                else:
+                    print("EQUIV")
+                    return new_prog
+            case EvalCommand(env, new_prog):
+                print("EVAL")
+
+        return new_prog
 
 
 class Asker:
@@ -131,44 +175,4 @@ class Asker:
         return parse_env_lines(res)
 
     async def opt(self, prog: lang.Program) -> lang.Program:
-        chat = Chat(self)
-
-        # Ask for a command.
-        prompt = self.prompt("opt.md", prog=prog.pretty())
-        code = extract_code(await chat.send(prompt))
-        if not code:
-            code = extract_code(
-                await chat.send(
-                    self.prompt(
-                        "malformed_command.md", error="no fenced command found"
-                    )
-                )
-            )
-            assert code, "two strikes"
-
-        # Process the agent's command.
-        try:
-            cmd = parse_command(code)
-        except CommandError as e:
-            code = await chat.send(
-                self.prompt("malformed_command.md", error=str(e))
-            )
-            assert code  # TODO retry here too??
-            cmd = parse_command(code)  # TODO: catch the error
-
-        match cmd:
-            case CheckCommand(new_prog):
-                print("CHECK")
-                # Check equivalence.
-                ce = smt.equiv(prog, new_prog)
-                if ce:
-                    # TODO: Send counter-example as feedback.
-                    ce.print()
-                    assert False
-                else:
-                    print("EQUIV")
-                    return new_prog
-            case EvalCommand(env, new_prog):
-                print("EVAL")
-
-        return new_prog
+        return await OptChat(self, prog).run()
