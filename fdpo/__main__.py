@@ -2,7 +2,7 @@ from .lang import parse, Program
 from .check import check, CheckError
 from .smt import prog_formula, equiv_formula, run, equiv
 from .ask import Asker
-from .util import parse_env, print_env
+from .util import parse_env, env_str
 from .bench import bench_run
 from . import lib
 from pysmt.shortcuts import to_smtlib
@@ -70,7 +70,7 @@ def main():
         case "run":
             prog, _ = read_progs()
             inputs = parse_env(sys.argv[2:])
-            print_env(run(prog, inputs))
+            print(env_str(run(prog, inputs)))
         case "equiv":
             prog1, prog2 = read_progs()
             assert prog2
@@ -83,7 +83,7 @@ def main():
         case "ask-run":
             prog, _ = read_progs()
             inputs = parse_env(sys.argv[2:])
-            print_env(asyncio.run(Asker(config).run(prog, inputs)))
+            print(env_str(asyncio.run(Asker(config).run(prog, inputs))))
         case "ask-opt":
             prog, _ = read_progs()
             asyncio.run(Asker(config).opt(prog))

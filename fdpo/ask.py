@@ -3,7 +3,7 @@ from ollama import AsyncClient
 import tomllib
 import jinja2
 from . import lang, smt, lib
-from .util import Env, parse_env
+from .util import Env, parse_env, env_str
 import re
 import logging
 import sys
@@ -130,8 +130,8 @@ class OptChat(Chat):
 
     def eval(self, cmd: EvalCommand) -> str:
         """Perform an `eval` command for the agent."""
-        print("EVAL")
-        return "TK EVAL"
+        res = smt.run(cmd.prog, cmd.env)
+        return self.asker.prompt("eval.md", env=env_str(res))
 
     async def run(self) -> lang.Program:
         prompt = self.asker.prompt("opt.md", prog=self.prog.pretty())

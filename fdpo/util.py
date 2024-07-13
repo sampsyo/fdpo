@@ -6,6 +6,6 @@ def parse_env(args: list[str]) -> Env:
     return {key: int(value) for key, value in (arg.split("=") for arg in args)}
 
 
-def print_env(env: Env) -> None:
-    for key, value in env.items():
-        print(f"{key} = {value}")
+def env_str(env: Env) -> str:
+    out = [f"{key} = {value}" for key, value in env.items()]
+    return "\n".join(out)
