@@ -145,8 +145,9 @@ def equiv(
     prog1: lang.Program, prog2: lang.Program
 ) -> Optional[Counterexample]:
     """Check whether programs are equivalent, returning an example if not."""
-    phi = equiv_formula(prog1, prog2)
-    model = solve(phi)
+    with Environment():
+        phi = equiv_formula(prog1, prog2)
+        model = solve(phi)
     if not model:
         return None
 
