@@ -143,6 +143,7 @@ class OptChat(Chat):
     def __init__(self, asker: "Asker", prog: lang.Program):
         super().__init__(asker)
         self.prog = prog
+        self.best_prog: Optional[lang.Program] = None
 
     async def get_command(self, prompt: str) -> Command:
         resp = await self.send(prompt)
@@ -186,6 +187,11 @@ class OptChat(Chat):
         if ce:
             return self.asker.prompt("counterexample.md", ce=str(ce))
         else:
+            # Save the new best equivalent program.
+            score = cost.score(prog)
+            if self.best_prog is None or score < cost.score(self.best_prog):
+                LOG.debug(f"New best cost: {score}")
+                self.best_prog = prog
             return None
 
     def check(self, cmd: CheckCommand) -> str:
@@ -246,7 +252,8 @@ class OptChat(Chat):
         )
         cmd = await self.get_command(prompt)
 
-        for _ in range(MAX_ROUNDS):
+        round = -1
+        for round in range(MAX_ROUNDS):
             match cmd:
                 case CheckCommand(_):
                     resp = self.check(cmd)
@@ -256,15 +263,17 @@ class OptChat(Chat):
                     resp = self.cost(cmd)
                 case CommitCommand(_):
                     resp = self.commit(cmd)
-                    if resp is None:
-                        return cmd.prog
+                    break
                 case _:
                     assert_never(cmd)
 
             prompt = self.asker.prompt("next_command.md", ops=OPS)
             cmd = await self.get_command(f"{resp}\n\n{prompt}")
 
-        raise AskError(f"exceeded {MAX_ROUNDS} interaction rounds")
+        LOG.debug("Ended after %d interaction rounds.", round + 1)
+        if self.best_prog:
+            return self.best_prog
+        raise AskError(f"no equivalent found after {MAX_ROUNDS} rounds")
 
 
 class Asker:
