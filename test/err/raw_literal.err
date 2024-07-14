@@ -1,0 +1,1 @@
+syntax error: 3:15: The plain integer 1 is not allowed. All literals must be written as <width><base><value>, where <width> is the bit width, <base> is b, d, or x for binary, decimal, or hexadecimal, and <value> is the integer written in that base. For example, try 32d1 for a 32-bit decimal.

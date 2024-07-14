@@ -17,10 +17,11 @@ decl: dir WS ident ":" width ";"
 dir: "in" -> in | "out" -> out
 
 # Integer literals.
-lit: dlit | xlit | blit
+lit: dlit | xlit | blit | rawlit
 dlit: /[0-9]+/ "d" /[0-9]+/
 xlit: /[0-9]+/ "x" /[0-9A-Fa-f]+/
 blit: /[0-9]+/ "b" /[01]+/
+rawlit: INT
 
 ?ident: CNAME
 ?width: INT
@@ -147,6 +148,8 @@ class Literal:
 
     @classmethod
     def parse(cls, tree) -> "Literal":
+        if tree.data == "rawlit":
+            raise RawLiteralError(tree)
         width_tree, value_tree = tree.children
         width = int(width_tree)
         base = {"blit": 2, "dlit": 10, "xlit": 16}[tree.data]
@@ -238,14 +241,36 @@ class Program:
         )
 
 
+class ParseError(Exception):
+    pass
+
+
+class TreeError(ParseError):
+    def __init__(self, tree: lark.Tree, message: str):
+        row = tree.meta.line
+        col = tree.meta.column
+        super().__init__(f"{row}:{col}: {message}")
+
+
+class RawLiteralError(TreeError):
+    def __init__(self, tree: lark.Tree):
+        val = str(tree.children[0])
+        msg = (
+            f"The plain integer {val} is not allowed. All literals must be "
+            f"written as <width><base><value>, where <width> is the bit width, "
+            f"<base> is b, d, or x for binary, decimal, or hexadecimal, and "
+            f"<value> is the integer written in that base. For example, try "
+            f"32d{val} for a 32-bit decimal."
+        )
+        super().__init__(tree, msg)
+
+
 def parse(program: str) -> tuple[Program, Optional[Program]]:
-    parser = lark.Lark(GRAMMAR, parser="earley", start="prog")
-    tree = parser.parse(program)
+    parser = lark.Lark(
+        GRAMMAR, parser="earley", start="prog", propagate_positions=True
+    )
+    try:
+        tree = parser.parse(program)
+    except lark.exceptions.UnexpectedInput as e:
+        raise ParseError(str(e))
     return Program.parse(tree)
-
-
-def parse_body(asgts: str, other_prog: Program) -> Program:
-    parser = lark.Lark(GRAMMAR, parser="earley", start="asgts")
-    tree = parser.parse(asgts)
-    body = Program.parse_asgts(tree)
-    return Program(other_prog.inputs, other_prog.outputs, body)

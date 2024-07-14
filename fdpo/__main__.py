@@ -1,4 +1,4 @@
-from .lang import parse, Program
+from .lang import parse, Program, ParseError
 from .check import check, CheckError
 from .smt import prog_formula, equiv_formula, run, equiv
 from .ask import AskError, Asker
@@ -11,7 +11,6 @@ import sys
 import tomllib
 import os
 import logging
-import lark
 from typing import Optional
 import asyncio
 
@@ -31,7 +30,7 @@ def read_progs() -> tuple[Program, Optional[Program]]:
     src = sys.stdin.read()
     try:
         prog1, prog2 = parse(src)
-    except lark.UnexpectedInput as exc:
+    except ParseError as exc:
         print(f"syntax error: {exc}", file=sys.stderr)
         sys.exit(1)
 

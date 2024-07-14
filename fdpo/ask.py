@@ -9,7 +9,6 @@ import logging
 import sys
 from typing import Optional, assert_never
 from dataclasses import dataclass
-import lark
 
 LOG = logging.getLogger("fdpo")
 MAX_ERRORS = 5
@@ -81,7 +80,7 @@ def parse_command(s: str) -> Command:
 
     try:
         prog, _ = lang.parse(prog)
-    except lark.UnexpectedInput as exc:
+    except lang.ParseError as exc:
         raise CommandError(f"syntax error: {exc}")
 
     opcode, *args = cmd.split()
