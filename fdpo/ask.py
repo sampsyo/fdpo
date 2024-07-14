@@ -2,7 +2,7 @@ import asyncio
 from ollama import AsyncClient
 import tomllib
 import jinja2
-from . import lang, smt, lib, check
+from . import lang, smt, lib, check, cost
 from .util import Env, parse_env, env_str
 import re
 import logging
@@ -14,7 +14,7 @@ import lark
 LOG = logging.getLogger("fdpo")
 MAX_ERRORS = 5
 MAX_ROUNDS = 20
-OPS = ["check", "eval"]
+OPS = ["check", "eval", "cost"]
 
 
 def parse_env_lines(s: str) -> dict[str, int]:
@@ -51,7 +51,12 @@ class EvalCommand:
     prog: lang.Program
 
 
-Command = CheckCommand | EvalCommand
+@dataclass
+class CostCommand:
+    prog: lang.Program
+
+
+Command = CheckCommand | EvalCommand | CostCommand
 
 
 class CommandError(Exception):
@@ -84,6 +89,8 @@ def parse_command(s: str) -> Command:
             except ValueError as exc:
                 raise CommandError(f"invalid evaluation value: {exc}")
             return EvalCommand(env, prog)
+        case "cost":
+            return CostCommand(prog)
         case _:
             raise CommandError(f"unknown command: {opcode}")
 
@@ -194,8 +201,17 @@ class OptChat(Chat):
         res = smt.run(cmd.prog, env)
         return self.asker.prompt("eval.md", env=env_str(res))
 
+    def cost(self, cmd: CostCommand) -> str:
+        if err := self.well_formed(cmd.prog):
+            return err
+        return self.asker.prompt("cost.md", cost=cost.score(cmd.prog))
+
     async def run(self) -> lang.Program:
-        prompt = self.asker.prompt("opt.md", prog=self.prog.pretty())
+        prompt = self.asker.prompt(
+            "opt.md",
+            prog=self.prog.pretty(),
+            cost=cost.score(self.prog),
+        )
         cmd = await self.get_command(prompt)
 
         for _ in range(MAX_ROUNDS):
@@ -206,6 +222,8 @@ class OptChat(Chat):
                         return cmd.prog
                 case EvalCommand(_, _):
                     resp = self.eval(cmd)
+                case CostCommand(_):
+                    resp = self.cost(cmd)
                 case _:
                     assert_never(cmd)
 

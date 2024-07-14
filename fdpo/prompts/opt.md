@@ -1,9 +1,11 @@
 {% include "overview.md" %}
 
 Our goal is to start with a given program and obtain an equivalent but
-"smaller" program, i.e., one that uses fewer or smaller function calls, or one
-with shallower chains of functions. But the most important thing is that the
-new program behaves identically to the old program on all inputs.
+"smaller" program, i.e., one that uses fewer or smaller function calls.
+I have a cost model that assigns a numeric score to each function call,
+and the goal is to minimize the total score of the program. But the most
+important thing is that the new program behaves identically to the old program
+on all inputs.
 
 To search for a good optimized program, you can explore several options by
 issuing *commands*. The commands available to you are:
@@ -15,6 +17,7 @@ issuing *commands*. The commands available to you are:
 * `eval [VAR=VALUE ...]`: Evaluate a specified program with the given values
   for the input ports, and print the values of the output ports. You can use
   this command to test the behavior of a program.
+* `cost`: Compute the cost of a proposed program according to my cost model.
 
 To run a command, format it like this:
 
@@ -39,6 +42,8 @@ Here is the program we want to optimize:
 ```
 {{prog}}
 ```
+
+The cost of this program, according to my cost model, is {{cost}}.
 
 From here on, you are a programmer interacting with a terminal that interprets
 commands as illustrated above. You will enter commands, and I will respond
