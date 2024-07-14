@@ -42,10 +42,10 @@ res = or[4](x, y);
 Here is the program we want to optimize:
 
 ```
-{{prog}}
+{{ prog.pretty() }}
 ```
 
-The cost of this program, according to my cost model, is {{cost}}.
+The cost of this program, according to my cost model, is {{ prog | score }}.
 
 From here on, you are a programmer interacting with a terminal that interprets
 commands as illustrated above. You will enter commands, and I will respond

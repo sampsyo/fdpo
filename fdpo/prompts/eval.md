@@ -1,3 +1,3 @@
 Evaluation result:
 
-{{env}}
+{{ env | env_str }}

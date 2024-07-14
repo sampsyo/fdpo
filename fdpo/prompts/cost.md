@@ -1,3 +1,3 @@
 Modeled cost for:
-  This program: {{cost}}
-  The original program: {{orig_cost}}
+  This program: {{ new_prog | score }}
+  The original program: {{ prog | score }}

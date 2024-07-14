@@ -145,6 +145,11 @@ class OptChat(Chat):
         self.prog = prog
         self.best_prog: Optional[lang.Program] = None
 
+    def prompt(self, name: str, **kwargs) -> str:
+        return self.asker.prompt(
+            name, prog=self.prog, best_prog=self.best_prog, ops=OPS, **kwargs
+        )
+
     async def get_command(self, prompt: str) -> Command:
         resp = await self.send(prompt)
         for _ in range(MAX_ERRORS):
@@ -152,7 +157,7 @@ class OptChat(Chat):
                 return parse_resp_command(resp)
             except CommandError as e:
                 resp = await self.send(
-                    self.asker.prompt("malformed_command.md", error=str(e))
+                    self.prompt("malformed_command.md", error=str(e))
                 )
         raise AskError(f"exceeded {MAX_ERRORS} interaction errors")
 
@@ -160,7 +165,7 @@ class OptChat(Chat):
         try:
             check.check(prog)
         except check.CheckError as e:
-            return self.asker.prompt("illformed.md", error=str(e))
+            return self.prompt("illformed.md", error=str(e))
         return None
 
     def _check_equiv(self, prog: lang.Program) -> Optional[str]:
@@ -170,9 +175,7 @@ class OptChat(Chat):
         """
         # Check that the two programs have the same input/output ports.
         if not same_sig(self.prog, prog):
-            return self.asker.prompt(
-                "signature_mismatch.md", sig=self.prog.pretty_sig()
-            )
+            return self.prompt("signature_mismatch.md")
 
         # Check that the program is well-formed.
         if err := self.well_formed(prog):
@@ -180,12 +183,12 @@ class OptChat(Chat):
 
         # Check for an identical program.
         if self.prog == prog:
-            return self.asker.prompt("identical.md")
+            return self.prompt("identical.md")
 
         # Check equivalence.
         ce = smt.equiv(self.prog, prog)
         if ce:
-            return self.asker.prompt("counterexample.md", ce=str(ce))
+            return self.prompt("counterexample.md", ce=ce)
         else:
             # Save the new best equivalent program.
             score = cost.score(prog)
@@ -198,7 +201,7 @@ class OptChat(Chat):
         resp = self._check_equiv(cmd.prog)
         if resp:
             return resp
-        return self.asker.prompt("equivalent.md")
+        return self.prompt("equivalent.md")
 
     def commit(self, cmd: CommitCommand) -> Optional[str]:
         """Perform a `commit` command for the agent.
@@ -209,18 +212,14 @@ class OptChat(Chat):
         if resp:
             return resp
         if cost.score(cmd.prog) >= cost.score(self.prog):
-            return self.asker.prompt(
-                "cost.md",
-                cost=cost.score(cmd.prog),
-                orig_cost=cost.score(self.prog),
-            )
+            return self.prompt("cost.md", new_prog=cmd.prog)
         return None
 
     def eval(self, cmd: EvalCommand) -> str:
         """Perform an `eval` command for the agent."""
         # Check that the provided inputs match the input ports.
         if not all(name in cmd.env for name in self.prog.inputs):
-            return self.asker.prompt(
+            return self.prompt(
                 "missing_input.md", inputs=", ".join(cmd.prog.inputs)
             )
 
@@ -233,23 +232,15 @@ class OptChat(Chat):
 
         # Run the program.
         res = smt.run(cmd.prog, env)
-        return self.asker.prompt("eval.md", env=env_str(res))
+        return self.prompt("eval.md", env=res)
 
     def cost(self, cmd: CostCommand) -> str:
         if err := self.well_formed(cmd.prog):
             return err
-        return self.asker.prompt(
-            "cost.md",
-            cost=cost.score(cmd.prog),
-            orig_cost=cost.score(self.prog),
-        )
+        return self.prompt("cost.md", new_prog=cmd.prog)
 
     async def run(self) -> lang.Program:
-        prompt = self.asker.prompt(
-            "opt.md",
-            prog=self.prog.pretty(),
-            cost=cost.score(self.prog),
-        )
+        prompt = self.prompt("opt.md")
         cmd = await self.get_command(prompt)
 
         round = -1
@@ -267,7 +258,7 @@ class OptChat(Chat):
                 case _:
                     assert_never(cmd)
 
-            prompt = self.asker.prompt("next_command.md", ops=OPS)
+            prompt = self.prompt("next_command.md")
             cmd = await self.get_command(f"{resp}\n\n{prompt}")
 
         LOG.debug("Ended after %d interaction rounds.", round + 1)
@@ -282,13 +273,24 @@ class Asker:
         self.model = config["model"]
         self.jinja = jinja2.Environment(
             loader=jinja2.PackageLoader("fdpo", "prompts"),
+            autoescape=False,
+        )
+        self.jinja.globals.update(
+            {
+                "lib_help": "\n".join(
+                    f"* {f.help}" for f in lib.FUNCTIONS.values()
+                ),
+            }
+        )
+        self.jinja.filters.update(
+            {
+                "score": cost.score,
+                "env_str": env_str,
+            }
         )
 
     def prompt(self, filename: str, **kwargs) -> str:
         template = self.jinja.get_template(filename)
-        kwargs["lib_help"] = "\n".join(
-            f"* {f.help}" for f in lib.FUNCTIONS.values()
-        )
         return template.render(**kwargs)
 
     async def interact(self, prompt: str):
