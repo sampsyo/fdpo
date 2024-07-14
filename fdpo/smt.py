@@ -81,15 +81,18 @@ def get_solver(name: str, debug: bool = False):
     # Do a mysterious global-state dance for pysmt to register solvers for later use.
     smt_env = get_env()
 
-    match name:
-        case "z3":
-            smt_env.factory.add_generic_solver(
-                "z3", [shutil.which("z3"), "-smt2", "-in"], [logics.BV]
-            )
-        case "boolector":
-            smt_env.factory.add_generic_solver(
-                "boolector", [shutil.which("boolector"), "--smt2"], [logics.BV]
-            )
+    if name not in smt_env.factory.all_solvers():
+        match name:
+            case "z3":
+                smt_env.factory.add_generic_solver(
+                    "z3", [shutil.which("z3"), "-smt2", "-in"], [logics.BV]
+                )
+            case "boolector":
+                smt_env.factory.add_generic_solver(
+                    "boolector",
+                    [shutil.which("boolector"), "--smt2"],
+                    [logics.BV],
+                )
 
     options = {}
     if debug:
