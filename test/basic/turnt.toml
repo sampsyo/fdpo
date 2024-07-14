@@ -14,3 +14,7 @@ default = false
 [envs.smt]
 command = "fdpo smt {args} < {filename}"
 output.smt = "-"
+
+[envs.cost]
+command = "fdpo cost {args} < {filename}"
+output.cost = "-"
