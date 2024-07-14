@@ -4,6 +4,7 @@ from .smt import prog_formula, equiv_formula, run, equiv
 from .ask import AskError, Asker
 from .util import parse_env, env_str
 from .bench import bench_run
+from .cost import score
 from . import lib
 from pysmt.shortcuts import to_smtlib
 import sys
@@ -97,6 +98,9 @@ def main():
             asyncio.run(bench_run(filenames, Asker(config), count))
         case "lib-help":
             print("\n".join(f.help for f in lib.FUNCTIONS.values()))
+        case "cost":
+            prog, _ = read_progs()
+            print(score(prog))
         case _:
             print(f"error: unknown mode {mode}", file=sys.stderr)
             sys.exit(1)
