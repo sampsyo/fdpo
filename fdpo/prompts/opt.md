@@ -11,13 +11,15 @@ To search for a good optimized program, you can explore several options by
 issuing *commands*. The commands available to you are:
 
 * `check`: Check if a proposed program is equivalent to the original program.
-  If it is equivalent, we have reached the goal and we are done. If it is not,
-  this command will report a concrete counter-example that reveals the
-  difference.
+  If it is not, this command will report a concrete counter-example that
+  reveals the difference.
 * `eval [VAR=VALUE ...]`: Evaluate a specified program with the given values
   for the input ports, and print the values of the output ports. You can use
   this command to test the behavior of a program.
 * `cost`: Compute the cost of a proposed program according to my cost model.
+* `commit`: Propose the given program as the new optimized program. This
+  command will fail if the program is not equivalent to the original program,
+  or if the cost is not smaller than the original.
 
 To run a command, format it like this:
 

@@ -14,7 +14,7 @@ import lark
 LOG = logging.getLogger("fdpo")
 MAX_ERRORS = 5
 MAX_ROUNDS = 20
-OPS = ["check", "eval", "cost"]
+OPS = ["check", "eval", "cost", "commit"]
 
 
 def parse_env_lines(s: str) -> dict[str, int]:
@@ -56,7 +56,12 @@ class CostCommand:
     prog: lang.Program
 
 
-Command = CheckCommand | EvalCommand | CostCommand
+@dataclass
+class CommitCommand:
+    prog: lang.Program
+
+
+Command = CheckCommand | EvalCommand | CostCommand | CommitCommand
 
 
 class CommandError(Exception):
@@ -91,6 +96,8 @@ def parse_command(s: str) -> Command:
             return EvalCommand(env, prog)
         case "cost":
             return CostCommand(prog)
+        case "commit":
+            return CommitCommand(prog)
         case _:
             raise CommandError(f"unknown command: {opcode}")
 
@@ -155,32 +162,53 @@ class OptChat(Chat):
             return self.asker.prompt("illformed.md", error=str(e))
         return None
 
-    def check(self, cmd: CheckCommand) -> Optional[str]:
-        """Perform a `check` command for the agent.
+    def _check_equiv(self, prog: lang.Program) -> Optional[str]:
+        """Check program equivalence.
 
-        Return a message if the programs are not equivalent, or None (indicating the
-        interaction is done) if they are.
+        Return a message if the programs are not equivalent, or None if they are.
         """
         # Check that the two programs have the same input/output ports.
-        if not same_sig(self.prog, cmd.prog):
+        if not same_sig(self.prog, prog):
             return self.asker.prompt(
                 "signature_mismatch.md", sig=self.prog.pretty_sig()
             )
 
         # Check that the program is well-formed.
-        if err := self.well_formed(cmd.prog):
+        if err := self.well_formed(prog):
             return err
 
         # Check for an identical program.
-        if self.prog == cmd.prog:
+        if self.prog == prog:
             return self.asker.prompt("identical.md")
 
         # Check equivalence.
-        ce = smt.equiv(self.prog, cmd.prog)
+        ce = smt.equiv(self.prog, prog)
         if ce:
             return self.asker.prompt("counterexample.md", ce=str(ce))
         else:
             return None
+
+    def check(self, cmd: CheckCommand) -> str:
+        resp = self._check_equiv(cmd.prog)
+        if resp:
+            return resp
+        return self.asker.prompt("equivalent.md")
+
+    def commit(self, cmd: CommitCommand) -> Optional[str]:
+        """Perform a `commit` command for the agent.
+
+        Return None if the interaction is done.
+        """
+        resp = self._check_equiv(cmd.prog)
+        if resp:
+            return resp
+        if cost.score(cmd.prog) >= cost.score(self.prog):
+            return self.asker.prompt(
+                "cost.md",
+                cost=cost.score(cmd.prog),
+                orig_cost=cost.score(self.prog),
+            )
+        return None
 
     def eval(self, cmd: EvalCommand) -> str:
         """Perform an `eval` command for the agent."""
@@ -204,7 +232,11 @@ class OptChat(Chat):
     def cost(self, cmd: CostCommand) -> str:
         if err := self.well_formed(cmd.prog):
             return err
-        return self.asker.prompt("cost.md", cost=cost.score(cmd.prog))
+        return self.asker.prompt(
+            "cost.md",
+            cost=cost.score(cmd.prog),
+            orig_cost=cost.score(self.prog),
+        )
 
     async def run(self) -> lang.Program:
         prompt = self.asker.prompt(
@@ -218,12 +250,14 @@ class OptChat(Chat):
             match cmd:
                 case CheckCommand(_):
                     resp = self.check(cmd)
-                    if resp is None:
-                        return cmd.prog
                 case EvalCommand(_, _):
                     resp = self.eval(cmd)
                 case CostCommand(_):
                     resp = self.cost(cmd)
+                case CommitCommand(_):
+                    resp = self.commit(cmd)
+                    if resp is None:
+                        return cmd.prog
                 case _:
                     assert_never(cmd)
 
