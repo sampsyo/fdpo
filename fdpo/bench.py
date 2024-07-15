@@ -64,10 +64,11 @@ async def bench_opt(filenames: list[str], asker: ask.Asker, count: int):
     writer.writerow(["prog", "best_cost", "rounds"])
     for filename, task in bench_opt_tasks(filenames, asker, count):
         try:
-            new_prog = await task
+            new_prog, rounds = await task
         except ask.AskError as e:
             score = -1
+            rounds = -1
         else:
             score = cost.score(new_prog)
         name, _ = os.path.splitext(os.path.basename(filename))
-        writer.writerow([name, score, 0])
+        writer.writerow([name, score, rounds])

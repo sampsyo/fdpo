@@ -256,14 +256,9 @@ class OptChat(Chat):
             return err
         return self.prompt("cost.md", new_prog=cmd.prog)
 
-    async def run(self) -> lang.Program:
+    async def run(self) -> tuple[lang.Program, int]:
         prompt = self.prompt("opt.md")
-        try:
-            cmd = await self.get_command(prompt)
-        except AskError:
-            if self.best_prog:
-                return self.best_prog
-            raise
+        cmd = await self.get_command(prompt)
 
         round = -1
         for round in range(MAX_ROUNDS):
@@ -282,11 +277,16 @@ class OptChat(Chat):
                     assert_never(cmd)
 
             prompt = self.prompt("next_command.md")
-            cmd = await self.get_command(f"{resp}\n\n{prompt}")
+            try:
+                cmd = await self.get_command(f"{resp}\n\n{prompt}")
+            except AskError:
+                if self.best_prog:
+                    return self.best_prog, round + 1
+                raise
 
         LOG.debug("Ended after %d interaction rounds.", round + 1)
         if self.best_prog:
-            return self.best_prog
+            return self.best_prog, round + 1
         raise AskError(f"no equivalent found after {MAX_ROUNDS} rounds")
 
 
@@ -339,5 +339,5 @@ class Asker:
         res = await self.interact(prompt)
         return parse_env_lines(res)
 
-    async def opt(self, prog: lang.Program) -> lang.Program:
+    async def opt(self, prog: lang.Program) -> tuple[lang.Program, int]:
         return await OptChat(self, prog).run()

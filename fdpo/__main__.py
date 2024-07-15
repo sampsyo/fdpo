@@ -84,7 +84,7 @@ def main():
         case "ask-opt":
             prog, _ = read_progs()
             try:
-                new_prog = asyncio.run(Asker(config).opt(prog))
+                new_prog, _ = asyncio.run(Asker(config).opt(prog))
             except AskError as e:
                 print(e, file=sys.stderr)
                 sys.exit(1)
