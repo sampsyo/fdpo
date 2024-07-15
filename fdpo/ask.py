@@ -37,11 +37,18 @@ def same_sig(prog1: lang.Program, prog2: lang.Program) -> bool:
     return prog1.inputs == prog2.inputs and prog1.outputs == prog2.outputs
 
 
+@dataclass(frozen=True)
+class AskConfig:
+    host: str
+    model: str
+    transcript_dir: Optional[str]
+
+
 class AskError(Exception):
     pass
 
 
-@dataclass
+@dataclass(frozen=True)
 class CheckCommand:
     prog: lang.Program
 
@@ -49,7 +56,7 @@ class CheckCommand:
         return "check"
 
 
-@dataclass
+@dataclass(frozen=True)
 class EvalCommand:
     env: Env
     prog: lang.Program
@@ -58,7 +65,7 @@ class EvalCommand:
         return f"eval({env_str(self.env)})"
 
 
-@dataclass
+@dataclass(frozen=True)
 class CostCommand:
     prog: lang.Program
 
@@ -66,7 +73,7 @@ class CostCommand:
         return f"cost -> {cost.score(self.prog)}"
 
 
-@dataclass
+@dataclass(frozen=True)
 class CommitCommand:
     prog: lang.Program
 
@@ -319,10 +326,10 @@ class OptChat(Chat):
 
 
 class Asker:
-    def __init__(self, config: dict):
-        self.client = AsyncClient(host=config["host"])
-        self.model = config["model"]
-        self.transcript_dir = config.get("transcripts")
+    def __init__(self, config: AskConfig):
+        self.client = AsyncClient(host=config.host)
+        self.model = config.model
+        self.transcript_dir = config.transcript_dir
 
         self.jinja = jinja2.Environment(
             loader=jinja2.PackageLoader("fdpo", "prompts"),

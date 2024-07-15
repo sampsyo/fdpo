@@ -1,7 +1,7 @@
 from .lang import parse, Program, ParseError
 from .check import check, CheckError
 from .smt import prog_formula, equiv_formula, run, equiv
-from .ask import AskError, Asker
+from .ask import AskError, Asker, AskConfig
 from .util import parse_env, env_str
 from .bench import bench_run, bench_opt
 from .cost import score
@@ -45,6 +45,16 @@ def read_progs() -> tuple[Program, Optional[Program]]:
     return prog1, prog2
 
 
+def asker(config: dict) -> Asker:
+    return Asker(
+        AskConfig(
+            host=config["host"],
+            model=config["model"],
+            transcript_dir=config.get("transcripts"),
+        )
+    )
+
+
 def main():
     config = load_config()
     LOG.addHandler(logging.StreamHandler())
@@ -80,11 +90,11 @@ def main():
         case "ask-run":
             prog, _ = read_progs()
             inputs = parse_env(sys.argv[2:])
-            print(env_str(asyncio.run(Asker(config).run(prog, inputs))))
+            print(env_str(asyncio.run(asker(config).run(prog, inputs))))
         case "ask-opt":
             prog, _ = read_progs()
             try:
-                new_prog, _ = asyncio.run(Asker(config).opt(prog))
+                new_prog, _ = asyncio.run(asker(config).opt(prog))
             except AskError as e:
                 print(e, file=sys.stderr)
                 sys.exit(1)
@@ -92,11 +102,11 @@ def main():
         case "bench-run":
             filenames = sys.argv[2:]
             count = config["bench"]["count"]
-            asyncio.run(bench_run(filenames, Asker(config), count))
+            asyncio.run(bench_run(filenames, asker(config), count))
         case "bench-opt":
             filenames = sys.argv[2:]
             count = config["bench"]["count"]
-            asyncio.run(bench_opt(filenames, Asker(config), count))
+            asyncio.run(bench_opt(filenames, asker(config), count))
         case "lib-help":
             print("\n".join(f.help for f in lib.FUNCTIONS.values()))
         case "cost":
