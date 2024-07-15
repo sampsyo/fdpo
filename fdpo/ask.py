@@ -127,23 +127,38 @@ class Chat:
         self.asker = asker
         self.history = []
 
+        # TODO generate filename
+        # TODO configuration
+        self.transcript_file = open("transcript.md", "w")
+
     async def send(self, message: str) -> str:
         LOG.debug(
             "Sending message (hist. %i):\n%s", len(self.history), message
         )
+        print(
+            f"# round {len(self.history)}\n", file=self.transcript_file
+        )  # TODO fix number
+        print(message, file=self.transcript_file)
+        print("\n---\n", file=self.transcript_file)
+
         self.history.append({"role": "user", "content": message})
         resp = await self.asker.client.chat(
             model=self.asker.model, messages=self.history, stream=True
         )
+
         out = []
         LOG.debug("Receiving response.")
+        print("```", file=self.transcript_file)
         async for part in resp:  # type: ignore
             text = part["message"]["content"]
             if LOG.level <= logging.DEBUG:
                 print(text, end="", file=sys.stderr, flush=True)
+            print(text, end="", file=self.transcript_file, flush=True)
             out.append(text)
         if LOG.level <= logging.DEBUG:
             print(file=sys.stderr, flush=True)
+        print("\n```\n", file=self.transcript_file, flush=True)
+
         LOG.debug("Response finished with %s parts.", len(out))
         out_s = "".join(out)
         self.history.append({"role": "assistant", "content": out_s})
