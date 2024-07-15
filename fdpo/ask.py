@@ -26,9 +26,9 @@ def parse_env_lines(s: str) -> dict[str, int]:
 
 def extract_code(s: str) -> Optional[str]:
     """Extract a Markdown fenced code block from the string."""
-    parts = re.split(r"^```$", s, 2, re.M)
+    parts = re.split(r"^\s*```+\s*$", s, 2, re.M)
     if len(parts) >= 3:
-        return parts[1]
+        return parts[1].strip()
     else:
         return None
 
