@@ -5,6 +5,25 @@ import csv
 import sys
 import os
 import asyncio
+from typing import Optional
+from collections.abc import Generator
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class BenchConfig:
+    host: str
+    models: list[str]
+    transcript_dir: Optional[str]
+    count: int
+
+    def ask_configs(self) -> Generator[ask.AskConfig, None, None]:
+        for model in self.models:
+            yield ask.AskConfig(
+                host=self.host,
+                model=model,
+                transcript_dir=self.transcript_dir,
+            )
 
 
 def gen_inputs(ports: list[lang.Port]) -> Env:
@@ -36,17 +55,19 @@ async def bench_run_one(filename: str, asker: ask.Asker, count: int) -> int:
     return score
 
 
-async def bench_run(filenames: list[str], asker: ask.Asker, count: int):
+async def bench_run(filenames: list[str], config: BenchConfig):
     writer = csv.writer(sys.stdout)
-    writer.writerow(["prog", "successes"])
-    tasks = {
-        filename: bench_run_one(filename, asker, count)
-        for filename in filenames
-    }
-    for filename, task in tasks.items():
-        successes = await task
-        name, _ = os.path.splitext(os.path.basename(filename))
-        writer.writerow([name, successes])
+    writer.writerow(["prog", "model", "successes"])
+    for ask_config in config.ask_configs():
+        asker = ask.Asker(ask_config)
+        tasks = {
+            filename: bench_run_one(filename, asker, config.count)
+            for filename in filenames
+        }
+        for filename, task in tasks.items():
+            successes = await task
+            name, _ = os.path.splitext(os.path.basename(filename))
+            writer.writerow([name, ask_config.model, successes])
 
 
 def bench_opt_tasks(filenames: list[str], asker: ask.Asker, count: int):

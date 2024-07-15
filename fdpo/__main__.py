@@ -3,7 +3,7 @@ from .check import check, CheckError
 from .smt import prog_formula, equiv_formula, run, equiv
 from .ask import AskError, Asker, AskConfig
 from .util import parse_env, env_str
-from .bench import bench_run, bench_opt
+from .bench import bench_run, bench_opt, BenchConfig
 from .cost import score
 from . import lib
 from pysmt.shortcuts import to_smtlib
@@ -55,6 +55,15 @@ def asker(config: dict) -> Asker:
     )
 
 
+def bench_config(config: dict) -> BenchConfig:
+    return BenchConfig(
+        host=config["host"],
+        models=config["bench"]["models"],
+        count=config["bench"]["count"],
+        transcript_dir=config.get("transcripts"),
+    )
+
+
 def main():
     config = load_config()
     LOG.addHandler(logging.StreamHandler())
@@ -102,7 +111,7 @@ def main():
         case "bench-run":
             filenames = sys.argv[2:]
             count = config["bench"]["count"]
-            asyncio.run(bench_run(filenames, asker(config), count))
+            asyncio.run(bench_run(filenames, bench_config(config)))
         case "bench-opt":
             filenames = sys.argv[2:]
             count = config["bench"]["count"]
