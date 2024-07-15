@@ -43,21 +43,33 @@ class AskError(Exception):
 class CheckCommand:
     prog: lang.Program
 
+    def log(self) -> str:
+        return "check"
+
 
 @dataclass
 class EvalCommand:
     env: Env
     prog: lang.Program
 
+    def log(self) -> str:
+        return f"eval({env_str(self.env)})"
+
 
 @dataclass
 class CostCommand:
     prog: lang.Program
 
+    def log(self) -> str:
+        return f"cost -> {cost.score(self.prog)}"
+
 
 @dataclass
 class CommitCommand:
     prog: lang.Program
+
+    def log(self) -> str:
+        return "commit"
 
 
 Command = CheckCommand | EvalCommand | CostCommand | CommitCommand
@@ -155,6 +167,7 @@ class OptChat(Chat):
             try:
                 return parse_resp_command(resp)
             except CommandError as e:
+                LOG.info("   malformed command: %s", e)
                 resp = await self.send(
                     self.prompt("malformed_command.md", error=str(e))
                 )
@@ -164,6 +177,7 @@ class OptChat(Chat):
         try:
             check.check(prog)
         except check.CheckError as e:
+            LOG.info("   ill-formed: %s", e)
             return self.prompt("illformed.md", error=str(e))
         return None
 
@@ -182,17 +196,20 @@ class OptChat(Chat):
 
         # Check for an identical program.
         if self.prog == prog:
+            LOG.info("   identical")
             return self.prompt("identical.md")
 
         # Check equivalence.
         ce = smt.equiv(self.prog, prog)
         if ce:
+            LOG.info("   not equivalent")
             return self.prompt("counterexample.md", ce=ce)
         else:
+            LOG.info("   equivalent")
             # Save the new best equivalent program.
             score = cost.score(prog)
             if self.best_prog is None or score < cost.score(self.best_prog):
-                LOG.debug(f"New best cost: {score}")
+                LOG.info(f"   new best cost: {score}")
                 self.best_prog = prog
             return None
 
@@ -218,6 +235,7 @@ class OptChat(Chat):
         """Perform an `eval` command for the agent."""
         # Check that the provided inputs match the input ports.
         if not all(name in cmd.env for name in self.prog.inputs):
+            LOG.info(f"   missing inputs")
             return self.prompt(
                 "missing_input.md", inputs=", ".join(cmd.prog.inputs)
             )
@@ -240,10 +258,16 @@ class OptChat(Chat):
 
     async def run(self) -> lang.Program:
         prompt = self.prompt("opt.md")
-        cmd = await self.get_command(prompt)
+        try:
+            cmd = await self.get_command(prompt)
+        except AskError:
+            if self.best_prog:
+                return self.best_prog
+            raise
 
         round = -1
         for round in range(MAX_ROUNDS):
+            LOG.info("%i. %s", round + 1, cmd.log())
             match cmd:
                 case CheckCommand(_):
                     resp = self.check(cmd)

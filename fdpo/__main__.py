@@ -87,10 +87,11 @@ def main():
         case "ask-opt":
             prog, _ = read_progs()
             try:
-                asyncio.run(Asker(config).opt(prog))
+                new_prog = asyncio.run(Asker(config).opt(prog))
             except AskError as e:
                 print(e, file=sys.stderr)
                 sys.exit(1)
+            print(new_prog.pretty())
         case "bench":
             filenames = sys.argv[2:]
             count = config["bench"]["count"]
