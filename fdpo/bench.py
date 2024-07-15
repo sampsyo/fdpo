@@ -1,4 +1,4 @@
-from . import lang, smt, ask
+from . import lang, smt, ask, cost
 from .util import Env
 import random
 import csv
@@ -23,7 +23,6 @@ async def bench_run_exp(prog: lang.Program, asker: ask.Asker) -> bool:
 
 
 async def bench_run_one(filename: str, asker: ask.Asker, count: int) -> int:
-    # Parse the program.
     with open(filename) as f:
         src = f.read()
     prog, _ = lang.parse(src)
@@ -48,3 +47,27 @@ async def bench_run(filenames: list[str], asker: ask.Asker, count: int):
         successes = await task
         name, _ = os.path.splitext(os.path.basename(filename))
         writer.writerow([name, successes])
+
+
+def bench_opt_tasks(filenames: list[str], asker: ask.Asker, count: int):
+    for filename in filenames:
+        with open(filename) as f:
+            src = f.read()
+        prog, _ = lang.parse(src)
+
+        for _ in range(count):
+            yield filename, asker.opt(prog)
+
+
+async def bench_opt(filenames: list[str], asker: ask.Asker, count: int):
+    writer = csv.writer(sys.stdout)
+    writer.writerow(["prog", "best_cost", "rounds"])
+    for filename, task in bench_opt_tasks(filenames, asker, count):
+        try:
+            new_prog = await task
+        except ask.AskError as e:
+            score = -1
+        else:
+            score = cost.score(new_prog)
+        name, _ = os.path.splitext(os.path.basename(filename))
+        writer.writerow([name, score, 0])

@@ -3,7 +3,7 @@ from .check import check, CheckError
 from .smt import prog_formula, equiv_formula, run, equiv
 from .ask import AskError, Asker
 from .util import parse_env, env_str
-from .bench import bench_run
+from .bench import bench_run, bench_opt
 from .cost import score
 from . import lib
 from pysmt.shortcuts import to_smtlib
@@ -92,10 +92,14 @@ def main():
                 print(e, file=sys.stderr)
                 sys.exit(1)
             print(new_prog.pretty())
-        case "bench":
+        case "bench-run":
             filenames = sys.argv[2:]
             count = config["bench"]["count"]
             asyncio.run(bench_run(filenames, Asker(config), count))
+        case "bench-opt":
+            filenames = sys.argv[2:]
+            count = config["bench"]["count"]
+            asyncio.run(bench_opt(filenames, Asker(config), count))
         case "lib-help":
             print("\n".join(f.help for f in lib.FUNCTIONS.values()))
         case "cost":
