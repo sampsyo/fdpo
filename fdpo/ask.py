@@ -156,7 +156,7 @@ class Chat:
 
         out = []
         LOG.debug("Receiving response.")
-        self.transcribe("```")
+        self.transcribe("````")
         async for part in resp:  # type: ignore
             text = part["message"]["content"]
             if LOG.level <= logging.DEBUG:
@@ -165,7 +165,7 @@ class Chat:
             out.append(text)
         if LOG.level <= logging.DEBUG:
             print(file=sys.stderr, flush=True)
-        self.transcribe("\n```\n")
+        self.transcribe("\n````\n")
 
         LOG.debug("Response finished with %s parts.", len(out))
         out_s = "".join(out)
