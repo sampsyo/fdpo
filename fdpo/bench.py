@@ -80,16 +80,18 @@ def bench_opt_tasks(filenames: list[str], asker: ask.Asker, count: int):
             yield filename, asker.opt(prog)
 
 
-async def bench_opt(filenames: list[str], asker: ask.Asker, count: int):
+async def bench_opt(filenames: list[str], config: BenchConfig):
     writer = csv.writer(sys.stdout)
-    writer.writerow(["prog", "best_cost", "rounds"])
-    for filename, task in bench_opt_tasks(filenames, asker, count):
-        try:
-            new_prog, rounds = await task
-        except ask.AskError as e:
-            score = -1
-            rounds = -1
-        else:
-            score = cost.score(new_prog)
-        name, _ = os.path.splitext(os.path.basename(filename))
-        writer.writerow([name, score, rounds])
+    writer.writerow(["prog", "model", "best_cost", "rounds"])
+    for ask_config in config.ask_configs():
+        asker = ask.Asker(ask_config)
+        for filename, task in bench_opt_tasks(filenames, asker, config.count):
+            try:
+                new_prog, rounds = await task
+            except ask.AskError as e:
+                score = -1
+                rounds = -1
+            else:
+                score = cost.score(new_prog)
+            name, _ = os.path.splitext(os.path.basename(filename))
+            writer.writerow([name, ask_config.model, score, rounds])

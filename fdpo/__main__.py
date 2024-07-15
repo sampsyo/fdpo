@@ -115,7 +115,7 @@ def main():
         case "bench-opt":
             filenames = sys.argv[2:]
             count = config["bench"]["count"]
-            asyncio.run(bench_opt(filenames, asker(config), count))
+            asyncio.run(bench_opt(filenames, bench_config(config)))
         case "lib-help":
             print("\n".join(f.help for f in lib.FUNCTIONS.values()))
         case "cost":
