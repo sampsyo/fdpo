@@ -9,6 +9,8 @@ import logging
 import sys
 from typing import Optional, assert_never
 from dataclasses import dataclass
+import datetime
+import os
 
 LOG = logging.getLogger("fdpo")
 MAX_ERRORS = 5
@@ -123,23 +125,29 @@ def parse_resp_command(s: str) -> Command:
 
 
 class Chat:
-    def __init__(self, asker: "Asker"):
+    def __init__(self, asker: "Asker", transcript_dir: Optional[str] = None):
         self.asker = asker
         self.history = []
 
-        # TODO generate filename
-        # TODO configuration
-        self.transcript_file = open("transcript.md", "w")
+        if transcript_dir:
+            os.makedirs(transcript_dir, exist_ok=True)
+            tstamp = datetime.datetime.now().isoformat()
+            filename = os.path.join(transcript_dir, f"{tstamp}.md")
+            self.transcript_file = open(filename, "w")
+        else:
+            self.transcript_file = None
+
+    def transcribe(self, s: str, end="\n") -> None:
+        if self.transcript_file:
+            print(s, end=end, file=self.transcript_file, flush=True)
 
     async def send(self, message: str) -> str:
         LOG.debug(
             "Sending message (hist. %i):\n%s", len(self.history), message
         )
-        print(
-            f"# round {len(self.history)}\n", file=self.transcript_file
-        )  # TODO fix number
-        print(message, file=self.transcript_file)
-        print("\n---\n", file=self.transcript_file)
+        self.transcribe(f"# round {len(self.history) // 2}\n")
+        self.transcribe(message)
+        self.transcribe("\n---\n")
 
         self.history.append({"role": "user", "content": message})
         resp = await self.asker.client.chat(
@@ -148,16 +156,16 @@ class Chat:
 
         out = []
         LOG.debug("Receiving response.")
-        print("```", file=self.transcript_file)
+        self.transcribe("```")
         async for part in resp:  # type: ignore
             text = part["message"]["content"]
             if LOG.level <= logging.DEBUG:
                 print(text, end="", file=sys.stderr, flush=True)
-            print(text, end="", file=self.transcript_file, flush=True)
+            self.transcribe(text, end="")
             out.append(text)
         if LOG.level <= logging.DEBUG:
             print(file=sys.stderr, flush=True)
-        print("\n```\n", file=self.transcript_file, flush=True)
+        self.transcribe("\n```\n")
 
         LOG.debug("Response finished with %s parts.", len(out))
         out_s = "".join(out)
@@ -166,8 +174,13 @@ class Chat:
 
 
 class OptChat(Chat):
-    def __init__(self, asker: "Asker", prog: lang.Program):
-        super().__init__(asker)
+    def __init__(
+        self,
+        asker: "Asker",
+        prog: lang.Program,
+        transcript_dir: Optional[str] = None,
+    ):
+        super().__init__(asker, transcript_dir)
         self.prog = prog
         self.best_prog: Optional[lang.Program] = None
 
@@ -309,6 +322,8 @@ class Asker:
     def __init__(self, config: dict):
         self.client = AsyncClient(host=config["host"])
         self.model = config["model"]
+        self.transcript_dir = config.get("transcripts")
+
         self.jinja = jinja2.Environment(
             loader=jinja2.PackageLoader("fdpo", "prompts"),
             autoescape=False,
@@ -355,4 +370,4 @@ class Asker:
         return parse_env_lines(res)
 
     async def opt(self, prog: lang.Program) -> tuple[lang.Program, int]:
-        return await OptChat(self, prog).run()
+        return await OptChat(self, prog, self.transcript_dir).run()
