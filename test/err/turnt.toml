@@ -1,4 +1,4 @@
 [envs.print]
-command = "fdpo < {filename}"
+command = "fdpo run {args} < {filename}"
 return_code = 1
 output.err = "2"

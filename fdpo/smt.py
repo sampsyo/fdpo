@@ -109,7 +109,26 @@ def solve(phi: FNode) -> Optional[Env]:
             return None
 
 
+class InputError(Exception):
+    pass
+
+
+def check_input(prog: lang.Program, env: Env) -> None:
+    for port in prog.inputs.values():
+        if port.name not in env:
+            raise InputError(f"missing input {port.name}")
+        value = env[port.name]
+        length = value.bit_length()
+        if length > port.width:
+            raise InputError(
+                f"input {port.name} is {port.width} bits, but {value} "
+                f"requires {length} bits"
+            )
+
+
 def run(prog: lang.Program, env: Env) -> Env:
+    check_input(prog, env)
+
     # Annoyingly, pysmt uses global state to hold information about all the symbols
     # and formulas we create. We encapsulate this state for the duration of the call.
     with Environment():
@@ -122,6 +141,7 @@ def run(prog: lang.Program, env: Env) -> Env:
 
         model = solve(phi)
     assert model, "unsat"
+
     return {k: v for k, v in model.items() if k in prog.outputs}
 
 

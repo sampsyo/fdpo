@@ -1,6 +1,6 @@
 from .lang import parse, Program, ParseError
 from .check import check, CheckError
-from .smt import prog_formula, equiv_formula, run, equiv
+from .smt import InputError, prog_formula, equiv_formula, run, equiv
 from .ask import AskError, Asker, AskConfig
 from .util import parse_env, env_str
 from .bench import bench_run, bench_opt, BenchConfig
@@ -86,7 +86,11 @@ def main():
         case "run":
             prog, _ = read_progs()
             inputs = parse_env(sys.argv[2:])
-            print(env_str(run(prog, inputs)))
+            try:
+                print(env_str(run(prog, inputs)))
+            except InputError as e:
+                print(f"error: {e}", file=sys.stderr)
+                sys.exit(1)
         case "equiv":
             prog1, prog2 = read_progs()
             assert prog2
