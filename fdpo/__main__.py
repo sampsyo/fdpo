@@ -48,10 +48,7 @@ def read_progs() -> tuple[Program, Optional[Program]]:
 def main():
     config = load_config()
     LOG.addHandler(logging.StreamHandler())
-    if config.get("verbose"):
-        LOG.setLevel(logging.DEBUG)
-    else:
-        LOG.setLevel(logging.INFO)
+    LOG.setLevel(config.get("verbosity", logging.INFO))
 
     mode = sys.argv[1] if len(sys.argv) > 1 else "print"
     match mode:
