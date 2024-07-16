@@ -326,7 +326,8 @@ class OptChat(Chat):
                     resp = self.cost(cmd)
                 case CommitCommand(_):
                     resp = self.commit(cmd)
-                    break
+                    if resp is None:
+                        break
                 case _:
                     assert_never(cmd)
 
