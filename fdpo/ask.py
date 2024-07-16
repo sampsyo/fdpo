@@ -29,6 +29,8 @@ def extract_code(s: str) -> Optional[str]:
     parts = re.split(r"^\s*```+\s*$", s, 2, re.M)
     if len(parts) >= 3:
         return parts[1].strip()
+    elif len(parts) == 2:
+        return parts[0].strip()  # Assume the command comes first?
     else:
         return None
 
