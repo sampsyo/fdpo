@@ -121,9 +121,13 @@ def check_input(prog: lang.Program, env: Env) -> None:
         length = value.bit_length()
         if length > port.width:
             raise InputError(
-                f"input {port.name} is {port.width} bits, but {value} "
+                f"input `{port.name}` is {port.width} bits, but {value} "
                 f"requires {length} bits"
             )
+
+    for name in env:
+        if name not in prog.inputs:
+            raise InputError(f"`{name}` is not an input port")
 
 
 def run(prog: lang.Program, env: Env) -> Env:
