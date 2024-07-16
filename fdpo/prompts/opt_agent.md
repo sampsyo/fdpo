@@ -3,13 +3,7 @@ for the user to execute. The user will respond with the results of those
 commands.
 
 {% include "overview.md" %}
-
-Our goal is to start with a given program and obtain an equivalent but
-"smaller" program, i.e., one that uses fewer or smaller function calls.
-I have a cost model that assigns a numeric score to each function call,
-and the goal is to minimize the total score of the program. But the most
-important thing is that the new program behaves identically to the old program
-on all inputs.
+{% include "opt_overview.md" %}
 
 In this conversation, you must write commands like this:
 
@@ -42,14 +36,6 @@ in y: 4;
 out res: 4;
 res = or[4](x, y);
 ```
-
-Here is the program we want to optimize:
-
-```
-{{ prog.pretty() }}
-```
-
-The cost of this program, according to my cost model, is {{ prog | score }}.
 
 For the entire conversation, the "user" is actually an automated system, not
 a human. Your messages must *only* consist of commands as described

@@ -311,7 +311,7 @@ class OptChat(Chat):
         return self.prompt("cost.md", new_prog=cmd.prog)
 
     async def run(self) -> tuple[lang.Program, int]:
-        self.system(self.prompt("opt.md"))
+        self.system(self.prompt("opt_agent.md"))
         cmd = await self.get_command("Enter your first command:")
 
         round = -1
