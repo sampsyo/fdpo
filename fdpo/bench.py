@@ -16,6 +16,7 @@ class BenchConfig:
     models: list[str]
     transcript_dir: Optional[str]
     count: int
+    methods: list[str]
 
     def ask_configs(self) -> Generator[ask.AskConfig, None, None]:
         for model in self.models:
@@ -72,19 +73,23 @@ async def bench_run(filenames: list[str], config: BenchConfig):
             sys.stdout.flush()
 
 
-def bench_opt_tasks(filenames: list[str], asker: ask.Asker, count: int):
+def bench_opt_tasks(
+    filenames: list[str], config: BenchConfig, asker: ask.Asker
+):
     for filename in filenames:
         with open(filename) as f:
             src = f.read()
         prog, _ = lang.parse(src)
 
         # One-shot queries.
-        for _ in range(count):
-            yield filename, "oneshot", asker.opt_oneshot(prog)
+        if "oneshot" in config.methods:
+            for _ in range(config.count):
+                yield filename, "oneshot", asker.opt_oneshot(prog)
 
         # Agent queries.
-        for _ in range(count):
-            yield filename, "agent", asker.opt(prog)
+        if "agent" in config.methods:
+            for _ in range(config.count):
+                yield filename, "agent", asker.opt(prog)
 
 
 async def bench_opt(filenames: list[str], config: BenchConfig):
@@ -94,7 +99,7 @@ async def bench_opt(filenames: list[str], config: BenchConfig):
     for ask_config in config.ask_configs():
         asker = ask.Asker(ask_config)
         for filename, method, task in bench_opt_tasks(
-            filenames, asker, config.count
+            filenames, config, asker
         ):
             try:
                 # TODO: Super hacky; make this type safe.

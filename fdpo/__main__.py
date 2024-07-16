@@ -61,6 +61,7 @@ def bench_config(config: dict) -> BenchConfig:
         models=config["bench"]["models"],
         count=config["bench"]["count"],
         transcript_dir=config.get("transcripts"),
+        methods=config["bench"]["methods"],
     )
 
 
