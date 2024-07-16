@@ -117,7 +117,11 @@ def check_input(prog: lang.Program, env: Env) -> None:
     for port in prog.inputs.values():
         if port.name not in env:
             raise InputError(f"missing input {port.name}")
+
         value = env[port.name]
+        if value < 0:
+            raise InputError(f"`{port.name}` is negative; inputs are unsigned")
+
         length = value.bit_length()
         if length > port.width:
             raise InputError(
