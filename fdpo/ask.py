@@ -162,6 +162,12 @@ class Chat:
         if self.transcript_file:
             print(s, end=end, file=self.transcript_file, flush=True)
 
+    def system(self, message: str) -> None:
+        LOG.debug(
+            "Adding system prompt (hist. %i):\n%s", len(self.history), message
+        )
+        self.history.append({"role": "system", "content": message})
+
     async def send(self, message: str) -> str:
         LOG.debug(
             "Sending message (hist. %i):\n%s", len(self.history), message
@@ -305,8 +311,8 @@ class OptChat(Chat):
         return self.prompt("cost.md", new_prog=cmd.prog)
 
     async def run(self) -> tuple[lang.Program, int]:
-        prompt = self.prompt("opt.md")
-        cmd = await self.get_command(prompt)
+        self.system(self.prompt("opt.md"))
+        cmd = await self.get_command("Enter your first command:")
 
         round = -1
         for round in range(MAX_ROUNDS):
