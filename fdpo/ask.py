@@ -145,6 +145,18 @@ def parse_resp_command(s: str) -> Command:
         raise
 
 
+def parse_resp_prog(s: str) -> lang.Program:
+    code = extract_code(s)
+    try:
+        if code:
+            new_prog, _ = lang.parse(code)
+            return new_prog
+        new_prog, _ = lang.parse(s)
+        return new_prog
+    except lang.ParseError as e:
+        raise AskError(f"syntax error: {e}")
+
+
 class Chat:
     def __init__(self, asker: "Asker", transcript_dir: Optional[str] = None):
         self.asker = asker
@@ -398,3 +410,17 @@ class Asker:
 
     async def opt(self, prog: lang.Program) -> tuple[lang.Program, int]:
         return await OptChat(self, prog, self.transcript_dir).run()
+
+    async def opt_oneshot(self, prog: lang.Program) -> lang.Program:
+        prompt = self.prompt("opt_oneshot.md", prog=prog)
+        res = await self.interact(prompt)
+        new_prog = parse_resp_prog(res)
+        try:
+            check.check(new_prog)
+        except check.CheckError as e:
+            raise AskError(f"invalid program: {e}")
+        if ce := smt.equiv(prog, new_prog):
+            LOG.debug("counter-example: %s", ce)
+            raise AskError("not equivalent")
+        else:
+            return new_prog

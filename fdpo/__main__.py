@@ -112,6 +112,14 @@ def main():
                 print(e, file=sys.stderr)
                 sys.exit(1)
             print(new_prog.pretty())
+        case "ask-opt-oneshot":
+            prog, _ = read_progs()
+            try:
+                new_prog = asyncio.run(asker(config).opt_oneshot(prog))
+            except AskError as e:
+                print(e, file=sys.stderr)
+                sys.exit(1)
+            print(new_prog.pretty())
         case "bench-run":
             filenames = sys.argv[2:]
             count = config["bench"]["count"]

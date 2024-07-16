@@ -38,3 +38,9 @@ indices they operate on, the bit widths they operate on, written in square
 brackets. Here is the complete list of functions available:
 
 {{lib_help}}
+
+In my cost model, it is always cheaper to use fewer functions. It cheaper to
+use functions that operate on fewer bits, so `add[32]` is more expensive than
+`add[8]`. Also, `div` is more expensive than `mul`, which is more expensive
+than `add` and `sub`, which are more expensive than logical operators like
+`and`, `or`, and `xor`.
