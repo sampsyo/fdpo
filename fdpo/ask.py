@@ -273,7 +273,7 @@ class OptChat(Chat):
             return err
 
         # Silently ignore extra inputs.
-        env = {k: v for k, v in cmd.env.items() if k in self.prog.inputs}
+        env = {k: v for k, v in cmd.env.items() if k in cmd.prog.inputs}
 
         # Run the program.
         try:
