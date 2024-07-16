@@ -268,13 +268,6 @@ class OptChat(Chat):
 
     def eval(self, cmd: EvalCommand) -> str:
         """Perform an `eval` command for the agent."""
-        # Check that the provided inputs match the input ports.
-        if not all(name in cmd.env for name in self.prog.inputs):
-            LOG.info(f"   missing inputs")
-            return self.prompt(
-                "missing_input.md", inputs=", ".join(cmd.prog.inputs)
-            )
-
         # Check that the program is well-formed.
         if err := self.well_formed(cmd.prog):
             return err
@@ -283,7 +276,11 @@ class OptChat(Chat):
         env = {k: v for k, v in cmd.env.items() if k in self.prog.inputs}
 
         # Run the program.
-        res = smt.run(cmd.prog, env)
+        try:
+            res = smt.run(cmd.prog, env)
+        except smt.InputError as e:
+            LOG.info(f"   input error: {e}")
+            return self.prompt("input_error.md", error=str(e))
         return self.prompt("eval.md", env=res)
 
     def cost(self, cmd: CostCommand) -> str:
