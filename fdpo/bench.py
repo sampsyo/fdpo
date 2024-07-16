@@ -58,6 +58,7 @@ async def bench_run_one(filename: str, asker: ask.Asker, count: int) -> int:
 async def bench_run(filenames: list[str], config: BenchConfig):
     writer = csv.writer(sys.stdout)
     writer.writerow(["prog", "model", "successes"])
+    sys.stdout.flush()
     for ask_config in config.ask_configs():
         asker = ask.Asker(ask_config)
         tasks = {
@@ -68,6 +69,7 @@ async def bench_run(filenames: list[str], config: BenchConfig):
             successes = await task
             name, _ = os.path.splitext(os.path.basename(filename))
             writer.writerow([name, ask_config.model, successes])
+            sys.stdout.flush()
 
 
 def bench_opt_tasks(filenames: list[str], asker: ask.Asker, count: int):
@@ -76,22 +78,36 @@ def bench_opt_tasks(filenames: list[str], asker: ask.Asker, count: int):
             src = f.read()
         prog, _ = lang.parse(src)
 
+        # One-shot queries.
         for _ in range(count):
-            yield filename, asker.opt(prog)
+            yield filename, "oneshot", asker.opt_oneshot(prog)
+
+        # Agent queries.
+        for _ in range(count):
+            yield filename, "agent", asker.opt(prog)
 
 
 async def bench_opt(filenames: list[str], config: BenchConfig):
     writer = csv.writer(sys.stdout)
-    writer.writerow(["prog", "model", "best_cost", "rounds"])
+    writer.writerow(["prog", "method", "model", "best_cost", "rounds"])
+    sys.stdout.flush()
     for ask_config in config.ask_configs():
         asker = ask.Asker(ask_config)
-        for filename, task in bench_opt_tasks(filenames, asker, config.count):
+        for filename, method, task in bench_opt_tasks(
+            filenames, asker, config.count
+        ):
             try:
-                new_prog, rounds = await task
+                # TODO: Super hacky; make this type safe.
+                if method == "oneshot":
+                    new_prog = await task
+                    rounds = 1
+                else:
+                    new_prog, rounds = await task  # type: ignore
             except ask.AskError as e:
                 score = -1
                 rounds = -1
             else:
-                score = cost.score(new_prog)
+                score = cost.score(new_prog)  # type: ignore
             name, _ = os.path.splitext(os.path.basename(filename))
-            writer.writerow([name, ask_config.model, score, rounds])
+            writer.writerow([name, method, ask_config.model, score, rounds])
+            sys.stdout.flush()
