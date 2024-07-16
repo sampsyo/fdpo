@@ -280,7 +280,9 @@ class OptChat(Chat):
             res = smt.run(cmd.prog, env)
         except smt.InputError as e:
             LOG.info(f"   input error: {e}")
-            return self.prompt("input_error.md", error=str(e))
+            return self.prompt(
+                "input_error.md", error=str(e), new_prog=cmd.prog
+            )
         return self.prompt("eval.md", env=res)
 
     def cost(self, cmd: CostCommand) -> str:
