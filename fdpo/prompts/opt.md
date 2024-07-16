@@ -50,8 +50,9 @@ Here is the program we want to optimize:
 
 The cost of this program, according to my cost model, is {{ prog | score }}.
 
-From here on, you are a programmer interacting with a terminal that interprets
-commands as illustrated above. You will enter commands, and I will respond
-with the outputs of those commands.
+For the rest of this conversation, you will be interacting with an automated
+system, not a human. Your messages must *only* consist of commands as described
+above. Do not write any English sentences. *Only* write the command, with no
+other text. You will then see the results of those commands or error messages.
 
 Enter your first command:
