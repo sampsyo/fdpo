@@ -1,3 +1,6 @@
+You are a programmer working on hardware design. You will respond with commands
+for me to execute. I will respond with the results of those commands.
+
 {% include "overview.md" %}
 
 Our goal is to start with a given program and obtain an equivalent but
@@ -7,8 +10,15 @@ and the goal is to minimize the total score of the program. But the most
 important thing is that the new program behaves identically to the old program
 on all inputs.
 
-To search for a good optimized program, you can explore several options by
-issuing *commands*. The commands available to you are:
+In this conversation, you must write commands like this:
+
+```
+<commmand>
+<program>
+```
+
+Where `<program>` is a code listing in our language described above, and
+`<command>` is one of:
 
 * `check`: Check if a proposed program is equivalent to the original program.
   If it is not, this command will report a concrete counter-example that
@@ -21,14 +31,7 @@ issuing *commands*. The commands available to you are:
   command will fail if the program is not equivalent to the original program,
   or if the cost is not smaller than the original.
 
-To run a command, format it like this:
-
-```
-commmand
-program
-```
-
-So, for example, to evaluate a simple program with input values 1 and 2, you
+For example, to evaluate a simple program with input values 1 and 2, you
 would write:
 
 ```

@@ -92,6 +92,9 @@ class CommandError(Exception):
 
 def parse_command(s: str) -> Command:
     """Parse an agent command from a response."""
+    if not s:
+        raise CommandError("empty command")
+
     try:
         cmd, prog = s.strip().split("\n", 1)
     except ValueError:
@@ -126,11 +129,20 @@ def parse_command(s: str) -> Command:
 
 def parse_resp_command(s: str) -> Command:
     """Parse an agent command appearing anywhere in a response."""
-    code = extract_code(s)
-    if code:
-        return parse_command(code)
-    s = s.replace("```", "")
-    return parse_command(s)
+    s = s.strip()
+
+    # Try parsing the entire response as a command.
+    clean = s.replace("```", "").strip()
+    try:
+        return parse_command(clean)
+    except CommandError:
+        # Try extracting a fenced code block as a command.
+        code = extract_code(s)
+        if code:
+            return parse_command(code)
+
+        # Otherwise, give up.
+        raise
 
 
 class Chat:
