@@ -5,7 +5,7 @@ def score_expr(expr: lang.Expression) -> int:
     match expr:
         case lang.Call(fname, params, inputs):
             func = lib.FUNCTIONS[fname]
-            return func.cost(params)
+            return func.cost(params) + sum(score_expr(e) for e in inputs)
         case _:
             return 0
 
